@@ -4,7 +4,9 @@ __pycache__/
 *.pyo
 *.pyd
 *.sqlite3
-
+.vscode
+g.txt
+app/utilis/geo.py
 # Virtualenv
 .env
 .venv
