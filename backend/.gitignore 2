@@ -1,0 +1,27 @@
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.vscode
+g.txt
+app/utilis/geo.py
+# Virtualenv
+.env
+.venv
+venv/
+
+# dotenv environment variables
+.env
+.env.*
+
+# Alembic cache
+alembic/versions/*.pyc
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
