@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+alembic
+python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+stripe
+celery
+redis
+pg8000
+pydantic<2.0
+pydantic-settings==0.2.5 # For Pydantic v2+ settings
+email-validator
+python-multipart
+itsdangerous
+httpx                  # (good for async API calls from FastAPI)
