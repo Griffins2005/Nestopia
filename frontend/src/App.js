@@ -7,9 +7,6 @@ import LoginForm from "./components/auth/loginform";
 import SignupForm from "./components/auth/signupform";
 import ChatPage from "./pages/chatPage";
 import SavedListingsPage from "./components/listings/saved";
-import PaymentSuccess from "./pages/paymentSucess";
-import WalletConnect from "./components/wallet/connect";
-import PaymentButton from "./components/payments/paymentButton";
 import Navbar from "./components/navbar";
 import OAuthCallback from "./pages/oauthCallback";
 import OnboardingPage from "./pages/onboarding";
@@ -41,10 +38,7 @@ export default function App() {
             <Route path="/listing/edit/:id" element={<EditListingPage />} />
             <Route path="/listing/:id" element={<ListingDetailsPage />} />
             <Route path="/chat" element={<ChatPage /> }/>
-            <Route path="/wallet" element={<WalletConnect /> }/>
             <Route path="/profile" element={ <ProfilePage /> }/>
-            <Route path="/pay" element={ <PaymentButton />}/>
-            <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/oauth-callback" element={<OAuthCallback />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
