@@ -1,34 +1,43 @@
+//src/components/auth/signupform.js
 import React, { useState, useContext } from "react";
-import { Link, useLocation } from "react-router-dom"; // useNavigate
+import { Link, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
+import AuthRoleChooser from "./AuthRoleChooser";
 import GoogleButton from "./googleButton";
 
 export default function SignupForm() {
   const { signup } = useContext(AuthContext);
-  //const navigate = useNavigate();
   const location = useLocation();
 
+  const [role, setRole] = useState(location.state?.role || "renter");
   const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("renter");
   const [error, setError] = useState(location.state?.error || "");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       await signup(email, password, role);
     } catch (err) {
-      const msg = err.response?.data?.detail || "Signup failed";
-      setError(msg);
+      const code = err.response?.data?.detail;
+      if (code === "google_only") {
+        setError("This email was registered via Google. Please use 'Continue with Google' to sign in.");
+      } else {
+        setError(code || "Signup failed");
+      }
     }
+    setLoading(false);
   };
 
   return (
     <div className="auth-container">
       <h2 className="form-title">Sign Up</h2>
+      <AuthRoleChooser role={role} setRole={setRole} disabled={loading} />
       {error && <div className="form-error">{error}</div>}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="off">
         <div className="form-group">
           <label htmlFor="email" className="form-label">Email</label>
           <input
@@ -36,8 +45,10 @@ export default function SignupForm() {
             type="email"
             className="form-input"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             required
+            disabled={loading}
+            autoComplete="username"
           />
         </div>
         <div className="form-group">
@@ -47,27 +58,17 @@ export default function SignupForm() {
             type="password"
             className="form-input"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
             required
+            disabled={loading}
+            autoComplete="new-password"
           />
-          <div className="divider">or</div>
-          <GoogleButton role={role} />
         </div>
-        <div className="form-group">
-          <label htmlFor="role" className="form-label">I am a…</label>
-          <select
-            id="role"
-            className="form-select"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="renter">Renter</option>
-            <option value="landlord">Landlord</option>
-          </select>
-        </div>
-        <button type="submit" className="btn btn-secondary form-button">
+        <button type="submit" className="btn btn-secondary form-button" disabled={loading}>
           Sign Up
         </button>
+        <div className="divider">or</div>
+        <GoogleButton role={role} disabled={loading} />
       </form>
       <p className="form-footer">
         Already have an account? <Link to="/login" className="nav-link">Log In</Link>

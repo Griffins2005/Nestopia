@@ -19,7 +19,7 @@ export function createListing(payload) {
  * GET ALL LISTINGS (optional filter later)
  */
 export function getAllListings() {
-  return api.get("/api/listings");
+  return api.get("/api/listings/");
 }
 
 /**

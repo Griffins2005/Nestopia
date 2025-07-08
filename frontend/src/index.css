@@ -10,7 +10,105 @@
     background-color: #ffffff;
     color: #1f2937;
   }
+  .auth-container {
+    width: 370px;
+    margin: 3.5rem auto 0 auto;
+    padding: 2.7rem 2.3rem 2.3rem 2.3rem;
+    border-radius: 20px;
+    background: #fcfffe;
+    box-shadow: 0 4px 32px rgba(16,185,129,0.11);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
   
+  .form-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1.6rem;
+    color: #134d4a;
+    letter-spacing: -1px;
+  }
+  
+  .form-label {
+    font-size: 1.09em;
+    font-weight: 500;
+    color: #106e64;
+    margin-bottom: 0.3em;
+  }
+  
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.87em 1.14em;
+    border-radius: 12px;
+    border: 1.5px solid #e8eef6;
+    background: #f7fafd;
+    font-size: 1.07em;
+    margin-bottom: 1em;
+    outline: none;
+    transition: border 0.14s;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: #15b7b1;
+  }
+  
+  .btn, .btn-google {
+    width: 100%;
+    padding: 0.95em 0;
+    border-radius: 20px;
+    border: none;
+    background: #09bba0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.12em;
+    cursor: pointer;
+    margin-bottom: 0.7em;
+    transition: background 0.12s;
+  }
+  .btn-google {
+    background: #fff;
+    color: #444;
+    border: 1.5px solid #13c4b3;
+    margin-top: 0.3em;
+  }
+  .btn-google:hover {
+    background: #f4f9f8;
+  }
+  
+  .divider {
+    margin: 1.1em 0 1.1em 0;
+    text-align: center;
+    color: #b7cbc8;
+    font-size: 1em;
+    font-weight: 500;
+  }
+  
+  .form-error {
+    background: #fde5e5;
+    color: #e05252;
+    border-radius: 9px;
+    padding: 0.7em 1em;
+    margin-bottom: 1em;
+    font-size: 1em;
+  }
+  
+  .form-footer {
+    margin-top: 2.3em;
+    color: #666;
+    font-size: 1.08em;
+    text-align: center;
+  }
+  
+  .nav-link {
+    color: #09bba0;
+    text-decoration: underline;
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  
+  .auth-role-chooser {
+    margin-bottom: 1.3em;
+  }  
   /*  Buttons */
   .btn {
     padding: 0.75rem 1.5rem;

@@ -35,6 +35,7 @@ def upload_image(file: UploadFile = File(...)):
     url = f"/static/listing_images/{fname}"
     return JSONResponse({"url": url})
 
+@router.get("", response_model=List[ListingResponse])
 @router.get("/", response_model=List[ListingResponse])
 def read_all_listings(
     db: Session = Depends(get_db),

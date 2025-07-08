@@ -1,6 +1,6 @@
 # app/db/models.py
 from sqlalchemy import (
-    Column, Integer, String, Boolean, DateTime, ForeignKey, Text, JSON, Float, Date
+    Column, Integer, String, Boolean, DateTime, ForeignKey, Text, JSON, Float, Date, UniqueConstraint
 )
 from app.db.base import Base
 from sqlalchemy.orm import relationship
@@ -9,9 +9,10 @@ from datetime import datetime
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    email = Column(String(255), index=True, nullable=False)
+    password_hash = Column(String(255), nullable=True)  # Nullable for Google OAuth
     role = Column(String(10), nullable=False)  # 'renter' or 'landlord'
+    auth_method = Column(String(16), nullable=False, default="email")  # 'email' or 'google'
     token_balance = Column(Integer, default=0)
     wallet_address = Column(String(42), unique=True, index=True, nullable=True)
     is_priority = Column(Boolean, default=False)
@@ -21,6 +22,9 @@ class User(Base):
     phone = Column(String)
     location = Column(String)
     profilePicture = Column(String)
+    __table_args__ = (
+        UniqueConstraint('email', 'role', name='unique_email_role'),
+    )
 
     renter_preferences = relationship("RenterPreferences", back_populates="user", uselist=False)
     landlord_preferences = relationship("LandlordPreferences", back_populates="user", uselist=False)

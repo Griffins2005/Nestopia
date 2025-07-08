@@ -1,27 +1,39 @@
-# app/crud/user.py
+#app/crud/user.py
 from sqlalchemy.orm import Session
-from app.db.models import User, RenterPreferences, LandlordPreferences
+from app.db.models import User, RenterPreferences, LandlordPreferences, Token as TokenModel
 from app.core.security import get_password_hash, verify_password
-
-def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
 
 def get_user_by_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
 
-def create_user(db: Session, email: str, password: str, role: str):
-    hashed = get_password_hash(password)
-    new_user = User(email=email, password_hash=hashed, role=role)
-    db.add(new_user)
+def get_user_by_email_and_role(db: Session, email: str, role: str):
+    return db.query(User).filter_by(email=email, role=role).first()
+
+def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
+
+def create_user(db: Session, email: str, password: str, role: str, method="email"):
+    hashed = get_password_hash(password) if method == "email" else None
+    user = User(email=email, password_hash=hashed, role=role, auth_method=method)
+    db.add(user)
     db.commit()
-    db.refresh(new_user)
-    token_row = Token(user_id=new_user.id, balance=0)
+    db.refresh(user)
+    token_row = TokenModel(user_id=user.id, balance=0)
     db.add(token_row)
     db.commit()
-    return new_user
+    return user
 
-def authenticate_user(db: Session, email: str, password: str):
-    user = get_user_by_email(db, email)
+def create_google_user(db: Session, email: str, role: str):
+    existing = get_user_by_email_and_role(db, email, role)
+    if existing:
+        if existing.auth_method == "email":
+            return "email_only"
+        return existing
+    user = create_user(db, email, None, role, method="google")
+    return user
+
+def authenticate_user(db: Session, email: str, password: str, role: str):
+    user = get_user_by_email_and_role(db, email, role)
     if not user or not verify_password(password, user.password_hash):
         return None
     return user
@@ -54,7 +66,6 @@ def save_landlord_preferences(db, user_id, data):
     prefs = db.query(LandlordPreferences).filter_by(user_id=user_id).first()
     if not prefs:
         prefs = LandlordPreferences(user_id=user_id)
-    # Only update tenant_preferences, lease_length, pets_allowed
     prefs.tenant_preferences = data.get("tenant_preferences", [])
     prefs.lease_length = data.get("lease_length")
     prefs.pets_allowed = data.get("pets_allowed", True)

@@ -14,7 +14,7 @@ export default function ListingsPage() {
   useEffect(() => {
     setLoading(true);
     axios
-      .get("/api/listings", {
+      .get("/api/listings/", {
         headers: {
           Authorization: `Bearer ${user?.accessToken || ""}`,
         },
