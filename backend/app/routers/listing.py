@@ -9,6 +9,8 @@ from app.schemas.listing import ( ListingCreate, ListingResponse,ListingUpdate,S
 from app.crud.listings import (create_listing, get_all_listings, get_listing, get_listings_by_landlord, update_listing,
     delete_listing, get_saved_listings_by_user,  get_saved_listings_by_user_full, save_listing, remove_saved_listing )
 from app.dependencies import get_db, get_current_user
+from app.crud.preferences import get_renter_preferences, get_landlord_preferences
+from app.utils.match import compute_compatibility_score
 
 router = APIRouter(prefix="/api/listings", tags=["Listings"])
 
@@ -41,10 +43,25 @@ def read_all_listings(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    # LANDLORD: Just show their own listings
     if current_user and current_user.role == "landlord":
         return get_listings_by_landlord(db, current_user.id)
-    else:
-        return get_all_listings(db)
+    
+    # RENTER: Calculate compatibility score for each listing
+    listings = get_all_listings(db)
+    renter_prefs = get_renter_preferences(db, current_user.id)
+    results = []
+    for listing in listings:
+        landlord_prefs = get_landlord_preferences(db, listing.landlord_id)
+        # listing is SQLAlchemy model, but ListingResponse expects a dict
+        data = ListingResponse.from_orm(listing).dict()
+        if renter_prefs:
+            score = compute_compatibility_score(renter_prefs, landlord_prefs, listing)
+            data["match_score"] = score  # Add to response
+        else:
+            data["match_score"] = None
+        results.append(data)
+    return results
 
 @router.put("/{listing_id}", response_model=ListingResponse)
 def update_listing_endpoint(

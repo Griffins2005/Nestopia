@@ -79,6 +79,7 @@ class ListingResponse(BaseModel):
     pets_allowed: Optional[bool] = None
     lease_length: Optional[int] = None
     images: Optional[List[str]] = []
+    match_score: Optional[float] = None
 
     class Config:
         orm_mode = True
