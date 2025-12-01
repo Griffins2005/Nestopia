@@ -19,6 +19,11 @@ const PROPERTY_FEATURES = [
 const HOUSE_RULES = [
   "No Smoking", "No Pets", "Credit Check Required", "Background Check Required"
 ];
+const NEIGHBORHOOD_PROFILE_OPTIONS = [
+  "Residential", "Urban", "Suburban", "Commercial", "Downtown",
+  "College/University area", "Rural", "Family-friendly", "Arts District",
+  "Historic", "Trendy/Hip", "Up-and-coming"
+];
 
 export default function CreateListingForm({ edit = false, initialFields = {}, onSubmitDone, onClose }) {
   const navigate = useNavigate();
@@ -29,6 +34,8 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
     bedrooms: "", bathrooms: "", sqft: "",
     available_from: "", lease_length: "",
     amenities: [], features: [], rules: [],
+    neighborhood_profile: [],
+    custom_tags: [],
     images: []
   });
   const [statusMessage, setStatusMessage] = useState("");
@@ -36,6 +43,7 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
   const [imageUploadType, setImageUploadType] = useState("upload");
   const [imageInput, setImageInput] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
+  const [newCustomTag, setNewCustomTag] = useState("");
   const fileInputRef = useRef();
 
   // Load for edit mode
@@ -63,7 +71,9 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
         images: initialFields.images || [],
         amenities: initialFields.amenities || [],
         features: initialFields.building_features || [], // If backend already returns as building_features
-        rules: initialFields.house_rules || []
+        rules: initialFields.house_rules || [],
+        neighborhood_profile: initialFields.neighborhood_profile || [],
+        custom_tags: initialFields.custom_tags || []
       }));
     }
   }, [edit, initialFields]);
@@ -106,11 +116,30 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
       address: "", city: "", state: "", zipcode: "",
       bedrooms: "", bathrooms: "", sqft: "",
       available_from: "", lease_length: "",
-      amenities: [], features: [], rules: [], images: []
+      amenities: [], features: [], rules: [],
+      neighborhood_profile: [], custom_tags: [],
+      images: []
     });
     setError("");
     setStatusMessage("");
     if (onClose) onClose();
+  };
+
+  const addCustomTag = () => {
+    if (newCustomTag && !fields.custom_tags.includes(newCustomTag)) {
+      setFields(prev => ({
+        ...prev,
+        custom_tags: [...prev.custom_tags, newCustomTag]
+      }));
+      setNewCustomTag("");
+    }
+  };
+
+  const removeCustomTag = (tag) => {
+    setFields(prev => ({
+      ...prev,
+      custom_tags: prev.custom_tags.filter(t => t !== tag)
+    }));
   };
 
   const handleSubmit = async e => {
@@ -138,6 +167,8 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
         amenities: fields.amenities,
         building_features: fields.features, // map
         house_rules: fields.rules,          // map
+        neighborhood_profile: fields.neighborhood_profile,
+        custom_tags: fields.custom_tags,
         images: fields.images
       };
       if (edit) {
@@ -240,6 +271,20 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
               <input name="sqft" type="number" value={fields.sqft} onChange={handleField} placeholder="1200" />
             </div>
           </div>
+          {/* Neighborhood Profile */}
+          <div className="section-title">Neighborhood Profile</div>
+          <div className="chip-group">
+            {NEIGHBORHOOD_PROFILE_OPTIONS.map(option => (
+              <button
+                type="button"
+                key={option}
+                className={`chip${fields.neighborhood_profile.includes(option) ? " selected" : ""}`}
+                onClick={() => toggleChip("neighborhood_profile", option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
           <div className="form-row">
             <div className="form-group">
               <label>Available From</label>
@@ -282,6 +327,36 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
                 className={`chip${fields.rules.includes(r) ? " selected" : ""}`}
                 onClick={() => toggleChip("rules", r)}>{r}</button>
             ))}
+          </div>
+          <div className="section-title">Custom Tags</div>
+          <div className="chip-group">
+            {fields.custom_tags.map(tag => (
+              <span key={tag} className="chip selected">
+                {tag}
+                <button
+                  type="button"
+                  className="remove-btn"
+                  onClick={() => removeCustomTag(tag)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Add Tag</label>
+              <div className="form-row">
+                <input
+                  value={newCustomTag}
+                  onChange={(e) => setNewCustomTag(e.target.value)}
+                  placeholder='e.g., "close to campus"'
+                />
+                <button type="button" className="preferences-btn-outline" onClick={addCustomTag}>
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="section-title">Images</div>

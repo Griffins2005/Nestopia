@@ -14,12 +14,12 @@ from app.routers import (
     preferences,
     listing,
     matches,
-    chat,
     tokens,
     payments,
     google_oauth, 
     wallet,
     blockchain,
+    stats,
 )
 from app.core.config import settings
 
@@ -54,12 +54,12 @@ app.include_router(users.router)
 app.include_router(preferences.router)
 app.include_router(listing.router)
 app.include_router(matches.router)
-app.include_router(chat.router)
 app.include_router(tokens.router)
 app.include_router(payments.router)
 app.include_router(google_oauth.router)
 app.include_router(wallet.router)
 app.include_router(blockchain.router)
+app.include_router(stats.router)
 
 @app.get("/health")
 def read_health():

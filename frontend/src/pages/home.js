@@ -1,148 +1,322 @@
 //src/pages/home.js
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import AuthContext from "../context/authContext";
-
-import { FaUserPlus, FaSearch, FaComments, FaCalendarCheck, FaWallet } from "react-icons/fa";
+import { FiSearch, FiArrowRight } from "react-icons/fi";
+import {
+  FaUserPlus,
+  FaSearch,
+  FaPhoneAlt,
+  FaCalendarCheck,
+  FaFileSignature,
+} from "react-icons/fa";
 import { MdOutlineCelebration } from "react-icons/md";
+import AuthContext from "../context/authContext";
+import { fetchStatsSummary } from "../api/stats";
+
+const valueProps = [
+  {
+    title: "Direct contact",
+    description:
+      "Reach verified hosts by email or phone with context from your profile so every intro feels personal.",
+    icon: "📞",
+  },
+  {
+    title: "AI Matching",
+    description:
+      "Let our hybrid AI compare budget, lifestyle, and timing so the options you see already feel like home.",
+    icon: "✨",
+  },
+  {
+    title: "Verified profiles",
+    description:
+      "We collect full bios plus contact info for renters and hosts, then surface it responsibly.",
+    icon: "🛡️",
+  },
+  {
+    title: "Tour coordination",
+    description:
+      "Share calendars, send reminders, and track next steps without juggling five apps.",
+    icon: "📅",
+  },
+];
+
+const journeySteps = [
+  {
+    title: "Tell us your vibe",
+    copy: "Share your must-haves, decor dreams, and timing. We listen first.",
+    icon: <FaUserPlus />,
+  },
+  {
+    title: "Curated matches",
+    copy: "AI highlights homes and renters who already fit your rhythms.",
+    icon: <FaSearch />,
+  },
+  {
+    title: "Reach out directly",
+    copy: "Use verified email and phone details plus your Nestopia profile to make a warm introduction.",
+    icon: <FaPhoneAlt />,
+  },
+  {
+    title: "Plan the visit",
+    copy: "Schedule warm introductions and hosted tours when it feels right.",
+    icon: <FaCalendarCheck />,
+  },
+  {
+    title: "Review next steps",
+    copy: "We line up documents, references, and reminders so you can say yes with confidence.",
+    icon: <FaFileSignature />,
+  },
+  {
+    title: "Move in & celebrate",
+    copy: "Close confident, move in calm, and keep earning community perks.",
+    icon: <MdOutlineCelebration />,
+  },
+];
+
+const heroHighlights = [
+  {
+    title: "Warm introductions",
+    detail: "Hosts send a personal hello before you ever knock on a door.",
+  },
+  {
+    title: "Verified contact info",
+    detail: "We collect email + phone from both sides so reaching out feels confident.",
+  },
+  {
+    title: "Faster move-ins",
+    detail: "Average tours within 48 hours, with flexible, human scheduling.",
+  },
+];
+
+const stories = [
+  {
+    quote:
+      "“Nestopia felt like a friend walking me into every listing. I could sense the people behind each home.”",
+    name: "Bria",
+    role: "Renter in Brooklyn",
+  },
+  {
+    quote:
+      "“We met renters who valued our restored brownstone. Direct introductions kept conversations thoughtful.”",
+    name: "Marcus & Eli",
+    role: "Landlords in Atlanta",
+  },
+  {
+    quote:
+      "“Sharing our Nestopia profile made long-distance touring less scary. We signed with full trust.”",
+    name: "Han & Pri",
+    role: "New to Seattle",
+  },
+];
 
 export default function Home() {
   const { user } = useContext(AuthContext);
+  const [statsSummary, setStatsSummary] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchStatsSummary()
+      .then((data) => {
+        if (mounted) {
+          setStatsSummary(data);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setStatsSummary(null);
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const heroStats = [
+    {
+      value:
+        typeof statsSummary?.total_users === "number"
+          ? statsSummary.total_users.toLocaleString()
+          : "—",
+      label: "Connected renters & hosts",
+    },
+    {
+      value:
+        typeof statsSummary?.total_listings === "number"
+          ? statsSummary.total_listings.toLocaleString()
+          : "—",
+      label: "Active homes on Nestopia",
+    },
+    {
+      value:
+        typeof statsSummary?.avg_visit_lead_hours === "number"
+          ? `${statsSummary.avg_visit_lead_hours} hrs`
+          : "—",
+      label: "Avg. match-to-visit time",
+    },
+  ];
 
   return (
-    <div className="home-bg-green">
-      <div className="home-wrapper">
-        {/* HERO */}
-        <section className="home-hero-section-green">
-          <div className="hero-content">
-            <h1 className="home-hero-title-green">
-              <span className="hero-highlight-green">Nestopia</span>
-            </h1>
-            <p className="home-hero-desc-green">
-              <span className="emoji" role="img" aria-label="wave">👋</span> Welcome to <b>Nestopia</b>, where finding your next home is personal, social, and secure. Earn tokens by chatting, get matched by smart AI, and move in with total peace of mind.
-            </p>
-            <div className="hero-cta">
-              {!user && (
-                <>
-                  <Link to="/signup" className="btn hero-btn-green hero-btn-main-green">Get Started</Link>
-                  <Link to="/login" className="btn hero-btn-green">Log In</Link>
-                </>
-              )}
-              {user && (user.role === "renter" ? (
-                <Link to="/renter" className="btn hero-btn-green hero-btn-main-green">Go to Dashboard</Link>
-              ) : (
-                <Link to="/landlord" className="btn hero-btn-green hero-btn-main-green">View My Listings</Link>
+    <div className="home-shell warm-home">
+      <section className="welcome-hero">
+        <div className="hero-copy">
+          <p className="eyebrow soft">Welcome to Nestopia</p>
+          <h1>Find a place—and people—that feel like home.</h1>
+          <p>
+            Nestopia pairs your lifestyle with warm spaces, thoughtful hosts, and
+            secure, transparent workflows. Come for the listings, stay for the
+            way we treat people.
+          </p>
+
+          <div className="hero-search-pill">
+            <FiSearch />
+            <input placeholder="Search neighborhoods, homes, hosts..." />
+            <button type="button">
+              Explore
+              <FiArrowRight />
+            </button>
+          </div>
+
+          <div className="hero-cta-group">
+            {!user && (
+              <>
+                <Link to="/signup" className="cta-btn primary">
+                  Create a profile
+                </Link>
+                <Link to="/login" className="cta-btn ghost">
+                  I already have an account
+                </Link>
+              </>
+            )}
+            {user && (
+              <Link
+                to={user.role === "renter" ? "/renter" : "/landlord"}
+                className="cta-btn primary"
+              >
+                {user.role === "renter" ? "Go to dashboard" : "View my listings"}
+              </Link>
+            )}
+            <Link to="/listings" className="cta-btn text">
+              Browse homes
+            </Link>
+          </div>
+
+          <p className="hero-assurance">
+            No hidden fees—just generous humans and calm, secure workflows.
+          </p>
+        </div>
+
+        <div className="hero-visual minimal">
+          <div className="hero-side-card">
+            <p className="pill subtle">Community-first</p>
+            <h3>Every step feels human.</h3>
+            <p>Here&apos;s what renters tell us makes Nestopia feel different:</p>
+            <ul className="hero-highlights-list">
+              {heroHighlights.map((item) => (
+                <li key={item.title}>
+                  <strong>{item.title}</strong>
+                  <span>{item.detail}</span>
+                </li>
               ))}
-            </div>
-          </div>
-          <div className="hero-graphic">
-            <div className="hero-blob-bg-green" />
-            
-            <div className="hero-blurb-green">Find your nest, stress-free.</div>
-          </div>
-        </section>
-
-        {/* FEATURES */}
-        <section className="home-features">
-          <h2 className="section-title-green">Why Nestopia?</h2>
-          <div className="features-list">
-            <div className="feature-card-green">
-              <span className="feature-icon">💬</span>
-              <h3>Chat-to-Token</h3>
-              <p>Earn tokens for every meaningful chat. Unlock visit scheduling and priority features by genuinely engaging.</p>
-            </div>
-            <div className="feature-card-green">
-              <span className="feature-icon">✨</span>
-              <h3>AI Matching</h3>
-              <p>AI-powered matches based on your preferences: location, budget, and lifestyle. No more endless scrolling!</p>
-            </div>
-            <div className="feature-card-green">
-              <span className="feature-icon">🔒</span>
-              <h3>Blockchain Security</h3>
-              <p>Schedule visits, hold deposits, and pay fees—all securely with blockchain and 402pay.</p>
-            </div>
-            <div className="feature-card-green">
-              <span className="feature-icon">👛</span>
-              <h3>Wallet Integration</h3>
-              <p>Pay with crypto or regular currency. Transparent, instant, and secure every step of the way.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* PROCESS STEPS */}
-        <section className="home-steps">
-          <h2 className="section-title-green">How It Works</h2>
-          <div className="steps-row">
-            <div className="step-card-green">
-              <FaUserPlus className="step-icon-green" />
-              <h4>1. Sign Up</h4>
-              <p>Create your profile as a Renter or Landlord.</p>
-            </div>
-            <div className="step-arrow-green">→</div>
-            <div className="step-card-green">
-              <FaSearch className="step-icon-green" />
-              <h4>2. Get Matched</h4>
-              <p>AI finds your best-fit homes or renters.</p>
-            </div>
-            <div className="step-arrow-green">→</div>
-            <div className="step-card-green">
-              <FaComments className="step-icon-green" />
-              <h4>3. Chat & Earn</h4>
-              <p>Message matches and earn tokens for every reply.</p>
-            </div>
-            <div className="step-arrow-green">→</div>
-            <div className="step-card-green">
-              <FaCalendarCheck className="step-icon-green" />
-              <h4>4. Schedule Visit</h4>
-              <p>Reach 10 tokens together to unlock visit scheduling.</p>
-            </div>
-            <div className="step-arrow-green">→</div>
-            <div className="step-card-green">
-              <FaWallet className="step-icon-green" />
-              <h4>5. Secure Your Spot</h4>
-              <p>Pay deposit with 402pay & blockchain security.</p>
-            </div>
-            <div className="step-arrow-green">→</div>
-            <div className="step-card-green">
-              <MdOutlineCelebration className="step-icon-green" />
-              <h4>6. Move In!</h4>
-              <p>Welcome home. Enjoy stress-free living.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Dual Instructions */}
-        <section className="instructions-dual">
-          <div className="instructions-block renter-instruct">
-            <h3>For Renters</h3>
-            <ul>
-              <li>Share your dream home preferences</li>
-              <li>Chat with listers and earn tokens</li>
-              <li>Book a visit and move in with ease!</li>
             </ul>
+            <div className="hero-note">
+              <span>92% vibe score last quarter</span>
+              <span>Thousands of kind introductions</span>
+            </div>
           </div>
-          <div className="instructions-block landlord-instruct">
-            <h3>For Landlords</h3>
-            <ul>
-              <li>List your space and set your criteria</li>
-              <li>Connect with serious, verified renters</li>
-              <li>Schedule, get paid, and relax</li>
-            </ul>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        {/* FAQ/Contact */}
-        <footer className="home-footer-green">
-          <div>
-            <span>Have questions?</span>
-            <Link to="/about" className="footer-link-green">Learn more</Link>
-            <a href="mailto:support@nestopia.com" className="footer-link-green">Contact Us</a>
+      <section className="hero-stats-panel">
+        {heroStats.map((stat) => (
+          <div key={stat.label}>
+            <span>{stat.value}</span>
+            <small>{stat.label}</small>
           </div>
-          <div className="footer-note-green">
-            © {new Date().getFullYear()} Nestopia. All rights reserved.
-          </div>
-        </footer>
-      </div>
+        ))}
+      </section>
+
+      <section className="warm-value-grid">
+        {valueProps.map((item) => (
+          <article key={item.title} className="value-card cozy">
+            <span className="value-icon">{item.icon}</span>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="home-journey warm">
+        <div className="section-heading-wrap">
+          <p className="eyebrow soft">Renting reimagined</p>
+          <h2>How your Nestopia journey unfolds</h2>
+          <p>Every touchpoint is designed to feel personal, transparent, and calm.</p>
+        </div>
+        <div className="journey-grid">
+          {journeySteps.map((step) => (
+            <article key={step.title} className="journey-card">
+              <div className="journey-icon">{step.icon}</div>
+              <h4>{step.title}</h4>
+              <p>{step.copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="community-stories">
+        <div className="section-heading-wrap">
+          <p className="eyebrow soft">Community warmth</p>
+          <h2>Stories from renters and hosts</h2>
+        </div>
+        <div className="stories-grid">
+          {stories.map((story) => (
+            <article key={story.name} className="story-card">
+              <p className="story-quote">{story.quote}</p>
+              <div className="story-meta">
+                <strong>{story.name}</strong>
+                <span>{story.role}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="cta-banner">
+        <div>
+          <p className="eyebrow soft">Ready when you are</p>
+          <h2>Let&apos;s create a rental story you&apos;re excited to tell.</h2>
+          <p>
+            Build your profile in minutes, invite a co-signer, or drop a note to a host you love.
+            Nestopia keeps every step warm, simple, and secure.
+          </p>
+        </div>
+        <div className="cta-banner-actions">
+          {!user && (
+            <Link to="/signup" className="cta-btn primary">
+              Start for free
+            </Link>
+          )}
+          {user && (
+            <Link
+              to={user.role === "renter" ? "/renter" : "/landlord"}
+              className="cta-btn primary"
+            >
+              Continue where you left off
+            </Link>
+          )}
+          <Link to="/contact" className="cta-btn ghost">
+            Talk to our team
+          </Link>
+        </div>
+      </section>
+
+      <footer className="home-footer cozy">
+        <div>
+          <p>Have questions?</p>
+          <Link to="/about">Learn more</Link>
+          <a href="mailto:support@nestopia.com">Contact us</a>
+        </div>
+        <small>© {new Date().getFullYear()} Nestopia. All rights reserved.</small>
+      </footer>
     </div>
   );
 }

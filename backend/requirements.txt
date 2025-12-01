@@ -6,13 +6,19 @@ alembic
 python-dotenv
 python-jose[cryptography]
 passlib[bcrypt]
-stripe
 celery
 redis
 pg8000
 pydantic<2.0
-pydantic-settings==0.2.5 # For Pydantic v2+ settings
 email-validator
 python-multipart
 itsdangerous
 httpx                  # (good for async API calls from FastAPI)
+numpy                  # For ML matching calculations
+typing_extensions>=4.7
+authlib>=1.3.0
+bcrypt>=4.1.2
+
+# Optional ML dependencies (uncomment if using semantic matching)
+# sentence-transformers  # For semantic text matching (~80MB model download)
+# torch                  # Required by sentence-transformers

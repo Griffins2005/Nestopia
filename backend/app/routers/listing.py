@@ -1,14 +1,14 @@
 #app/routers/listing.py
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import os
 from uuid import uuid4
 from app.schemas.listing import ( ListingCreate, ListingResponse,ListingUpdate,SavedListingResponse, SavedListingWithDetails )
 from app.crud.listings import (create_listing, get_all_listings, get_listing, get_listings_by_landlord, update_listing,
     delete_listing, get_saved_listings_by_user,  get_saved_listings_by_user_full, save_listing, remove_saved_listing )
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, get_optional_user
 from app.crud.preferences import get_renter_preferences, get_landlord_preferences
 from app.utils.match import compute_compatibility_score
 
@@ -41,23 +41,35 @@ def upload_image(file: UploadFile = File(...)):
 @router.get("/", response_model=List[ListingResponse])
 def read_all_listings(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_optional_user),
+    view_as_renter: bool = Query(False, description="For landlords: view all listings as a renter would")
 ):
-    # LANDLORD: Just show their own listings
-    if current_user and current_user.role == "landlord":
+    """
+    Get all listings. 
+    - Unauthenticated users: see all listings without match scores
+    - Landlords: see their own listings by default, or all listings if view_as_renter=True
+    - Renters: see all listings with match scores
+    """
+    # If landlord and not viewing as renter, show only their listings
+    if current_user and current_user.role == "landlord" and not view_as_renter:
         return get_listings_by_landlord(db, current_user.id)
     
-    # RENTER: Calculate compatibility score for each listing
+    # Otherwise, show all listings (for renters, unauthenticated users, or landlords viewing as renters)
     listings = get_all_listings(db)
-    renter_prefs = get_renter_preferences(db, current_user.id)
     results = []
+    
+    # Only calculate match scores if user is authenticated and is/wants to be treated as renter
+    renter_prefs = None
+    if current_user and (current_user.role == "renter" or (current_user.role == "landlord" and view_as_renter)):
+        renter_prefs = get_renter_preferences(db, current_user.id)
+    
     for listing in listings:
         landlord_prefs = get_landlord_preferences(db, listing.landlord_id)
-        # listing is SQLAlchemy model, but ListingResponse expects a dict
         data = ListingResponse.from_orm(listing).dict()
+        
         if renter_prefs:
             score = compute_compatibility_score(renter_prefs, landlord_prefs, listing)
-            data["match_score"] = score  # Add to response
+            data["match_score"] = score
         else:
             data["match_score"] = None
         results.append(data)

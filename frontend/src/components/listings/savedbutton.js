@@ -1,18 +1,29 @@
 // src/components/listings/savedbutton.js
 // src/components/listings/savedbutton.js
 import React, { useState, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
 import axios from "axios";
 import { FiHeart } from "react-icons/fi";
 
 export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [saved, setSaved] = useState(!!initiallySaved);
   const [alertMsg, setAlertMsg] = useState("");
 
   const toggleSave = async (e) => {
     e.preventDefault();
-    if (!user || !user.accessToken) return;
+    if (!user || !user.accessToken) {
+      navigate("/login", {
+        state: {
+          from: { pathname: location.pathname },
+          message: "Please sign in or create an account to save listings.",
+        },
+      });
+      return;
+    }
 
     if (saved) {
       // Remove from saved listings

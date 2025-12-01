@@ -6,7 +6,6 @@ import {
   FaSearch,
   FaCompass,
   FaRegHeart,
-  FaComments,
   FaUserCircle,
   FaBars,
   FaTimes,
@@ -39,6 +38,15 @@ export default function Navbar() {
     setDrawerOpen(false);
     navigate("/");
   };
+
+  const buildAuthState = (targetPath) =>
+    !user
+      ? {
+          from: {
+            pathname: targetPath,
+          },
+        }
+      : undefined;
 
   // Drawer accessibility: close on ESC or outside click
   useEffect(() => {
@@ -107,14 +115,18 @@ export default function Navbar() {
           <Link to="/listings" className="navbar-ntp-icon" title="Explore" aria-label="Explore listings">
             <FaCompass />
           </Link>
-          <Link to={user ? "/chat" : "/login"} className="navbar-ntp-icon" title="Chat" aria-label="Chat">
-            <FaComments />
-          </Link>
-          <Link to={user ? "/saved" : "/login"} className="navbar-ntp-icon" title="Saved Listings" aria-label="Saved Listings">
+          <Link
+            to={user ? "/saved" : "/login"}
+            state={buildAuthState("/saved")}
+            className="navbar-ntp-icon"
+            title="Saved Listings"
+            aria-label="Saved Listings"
+          >
             <FaRegHeart />
           </Link>
           <Link
             to={user ? "/profile" : "/login"}
+            state={buildAuthState("/profile")}
             className="navbar-ntp-icon"
             title={user ? "Profile" : "Login"}
             aria-label={user ? "Profile" : "Login"}
@@ -164,13 +176,18 @@ export default function Navbar() {
           <Link to="/listings" onClick={() => setDrawerOpen(false)}>
             <FaCompass /> Explore
           </Link>
-          <Link to={user ? "/chat/active" : "/login"} onClick={() => setDrawerOpen(false)}>
-            <FaComments /> Chat
-          </Link>
-          <Link to={user ? "/saved" : "/login"} onClick={() => setDrawerOpen(false)}>
+          <Link
+            to={user ? "/saved" : "/login"}
+            state={buildAuthState("/saved")}
+            onClick={() => setDrawerOpen(false)}
+          >
             <FaRegHeart /> Saved
           </Link>
-          <Link to={user ? "/profile" : "/login"} onClick={() => setDrawerOpen(false)}>
+          <Link
+            to={user ? "/profile" : "/login"}
+            state={buildAuthState("/profile")}
+            onClick={() => setDrawerOpen(false)}
+          >
             <FaUserCircle /> {user ? "Profile" : "Login"}
           </Link>
           {user && (

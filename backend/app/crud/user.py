@@ -73,3 +73,13 @@ def save_landlord_preferences(db, user_id, data):
     db.commit()
     db.refresh(prefs)
     return prefs
+
+
+def set_user_password(db: Session, user: User, new_password: str) -> User:
+    user.password_hash = get_password_hash(new_password)
+    if user.auth_method != "google":
+        user.auth_method = "email"
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user

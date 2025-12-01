@@ -1,84 +1,125 @@
-# app/routers/payments.py
-# from fastapi import APIRouter, Request, HTTPException, status, Depends
-# from stripe import Webhook, WebhookSignature, stripe
+"""402pay-compatible payment endpoints."""
 
-# from app.schemas.payment import CreatePaymentIntentRequest, PaymentIntentResponse
-# from app.dependencies import get_db
-# from app.core.config import settings
-# from app.crud.token import get_token_balance
-# from sqlalchemy.orm import Session
-# import json
+from typing import List
 
-# stripe.api_key = settings.STRIPE_SECRET_KEY
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-# router = APIRouter(prefix="/api/payments", tags=["payments"])
-
-# @router.post("/create-payment-intent", response_model=PaymentIntentResponse)
-# def create_payment_intent(request: CreatePaymentIntentRequest):
-#     try:
-#         intent = stripe.PaymentIntent.create(
-#             amount=request.amount,
-#             currency=request.currency,
-#             metadata=request.metadata,
-#         )
-#         return {"clientSecret": intent.client_secret}
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
-
-
-# @router.post("/webhook")
-# async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-#     payload = await request.body()
-#     sig_header = request.headers.get("stripe-signature")
-#     try:
-#         event = Webhook.construct_event(
-#             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-#         )
-#     except WebhookSignature.SigVerificationError:
-#         raise HTTPException(status_code=400, detail="Invalid signature")
-
-#     if event["type"] == "payment_intent.succeeded":
-#         intent = event["data"]["object"]
-#         metadata = intent.get("metadata", {})
-#         user_id = int(metadata.get("user_id", 0))
-#         package = metadata.get("package", "")
-#         # Determine token amount from package string. For example: "100_tokens"
-#         try:
-#             token_amount = int(package.split("_")[0])
-#         except:
-#             token_amount = 0
-
-#         # Credit tokens off-chain
-#         from app.crud.token import get_token_balance, spend_tokens
-#         from app.crud.user import get_user_by_id
-
-#         # Fetch user, update token balance
-#         user = get_user_by_id(db, user_id)
-#         if user:
-#             token_row = db.query(get_token_balance).filter().first()  # placeholder
-#             # Instead, write a small inline:
-#             from app.db.models import Token
-#             token_obj = db.query(Token).filter(Token.user_id == user_id).first()
-#             if token_obj:
-#                 token_obj.balance += token_amount
-#                 db.commit()
-#     return {"status": "success"}
-
-from fastapi import APIRouter, Depends, HTTPException, Request
+from app.crud.payment import (
+    create_payment_record,
+    get_payment_record,
+    list_user_payments,
+    update_payment_status,
+)
 from app.dependencies import get_current_user, get_db
-import requests
+from app.schemas.payment import (
+    PaymentConfirmRequest,
+    PaymentInitiateRequest,
+    PaymentInitiateResponse,
+    PaymentRecordOut,
+    PaymentRequirement,
+)
+from app.services.h402_client import (
+    H402IntegrationError,
+    build_payment_requirements,
+    verify_payment_header,
+)
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
-@router.post("/initiate")
-def initiate_payment(user = Depends(get_current_user)):
-    # Initiate a 402pay payment (sandbox mode, pseudo code)
-    payload = {
-        "user_id": user.id,
-        "amount": 50,  # or as required
-        "description": "Rental application fee or deposit"
+
+@router.post("/initiate", response_model=PaymentInitiateResponse)
+def initiate_payment(
+    payload: PaymentInitiateRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Create a payment intent and return the h402 payment requirement payload."""
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+
+    record = create_payment_record(
+        db,
+        user_id=user.id,
+        amount=payload.amount,
+        currency=payload.currency,
+        description=payload.description,
+        provider=payload.provider or "402pay",
+        listing_id=payload.listing_id,
+        metadata=payload.metadata,
+    )
+
+    try:
+        requirement = build_payment_requirements(payload, payment=record)
+    except H402IntegrationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    update_payment_status(
+        db,
+        record.id,
+        status="pending",
+        metadata={"h402_requirement": requirement.dict(exclude_none=True)},
+    )
+    db.refresh(record)
+
+    return PaymentInitiateResponse(payment=record, payment_requirements=requirement)
+
+
+@router.post("/confirm", response_model=PaymentRecordOut)
+def confirm_payment(
+    payload: PaymentConfirmRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Verify a signed h402 payment header with the facilitator."""
+    record = get_payment_record(db, payload.payment_id, user.id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if record.status == "completed":
+        return record
+
+    requirement_data = (record.metadata_json or {}).get("h402_requirement")
+    if not requirement_data:
+        raise HTTPException(status_code=400, detail="Missing payment requirements")
+
+    try:
+        requirement = PaymentRequirement(**requirement_data)
+        verification = verify_payment_header(payload.payment_header, requirement)
+    except H402IntegrationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    provider_ref = verification.get("txHash") or verification.get("payer")
+    metadata_updates = {
+        "verification": verification,
     }
-    response = requests.post("https://api.402pay.com/initiate", json=payload)
-    if response.status_code != 200:
-        raise HTTPException(502, "402pay payment failed")
-    return response.json()
+    record = update_payment_status(
+        db,
+        record.id,
+        status="completed",
+        provider_reference=provider_ref,
+        metadata=metadata_updates,
+    )
+    return record
+
+
+@router.get("", response_model=List[PaymentRecordOut])
+def payment_history(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Return the authenticated user's payment receipts."""
+    return list_user_payments(db, user.id)
+
+
+@router.get("/{payment_id}", response_model=PaymentRecordOut)
+def payment_detail(
+    payment_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Fetch a single payment receipt, ensuring owner access."""
+    record = get_payment_record(db, payment_id, user.id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return record
+
