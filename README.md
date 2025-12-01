@@ -1,266 +1,247 @@
-# 🏡 Nestopia – Smart Rental Matching Platform
+# Nestopia
 
-**Nestopia** is a full-stack rental housing platform that leverages **landlord/renter preferences** and **property features** to calculate compatibility scores, surface verified contact info, and make renting a home feel personal.
+Nestopia is a full-stack rental housing platform that matches renters with landlords based on preferences and property features. The system calculates compatibility scores between renter requirements and available listings, facilitating direct contact between parties through email and phone.
 
-The system is built with **React (frontend)** and **FastAPI + PostgreSQL (backend)**. It allows renters and landlords to connect through personalized listings, intelligent matching, and an intuitive user experience that now prioritizes direct email/phone introductions.
+## Architecture
 
----
+The application consists of a React frontend and a FastAPI backend with PostgreSQL. The frontend provides a responsive interface for browsing listings, managing profiles, and initiating contact. The backend handles authentication, preference matching, listing management, and contact information management.
 
-## ✨ Features
+## Features
 
-### 👤 Authentication & User Management
+### Authentication and User Management
 
-* **Email & Password login** with hashed storage (bcrypt + JWT)
-* **Google OAuth login**
-* **Role-based accounts**: Renter or Landlord
-* **Profile management**: name, bio, picture, phone, location
-* Secure JWT tokens
+- Email and password authentication with bcrypt password hashing
+- Google OAuth integration
+- Role-based access control (renter or landlord)
+- JWT token-based session management
+- User profile management including name, bio, profile picture, phone number, and location
 
-### 🏘 Listings
+### Listings Management
 
-* **Landlords**:
+**Landlords:**
+- Create, edit, and delete property listings
+- Upload multiple images per listing
+- Define amenities, house rules, pet policies, and lease terms
+- View and manage their own listings
 
-  * Create, edit, delete property listings
-  * Add images, amenities, house rules, pets policy, and lease terms
-* **Renters**:
+**Renters:**
+- Browse all available listings
+- Save listings for later reference
+- View detailed property information including images, specifications, and landlord contact details
 
-  * Browse all available listings
-  * **Save/favorite** listings
-* **Detail pages** with property carousel, specs, landlord info, and availability
+### Compatibility Scoring
 
-### 🤝 Compatibility Scoring
+The system calculates compatibility scores by comparing renter preferences against landlord requirements and property features. The scoring algorithm considers:
 
-* Uses **renter preferences** (budget, bedrooms, amenities, pets, etc.) compared with:
+- Budget range versus rent price
+- Bedroom and bathroom requirements
+- Unit and building amenities
+- Pet policies and tenant requirements
+- Lease length and move-in timing
+- Household size versus maximum occupants
+- Custom preference tags
 
-  * **Landlord preferences**
-  * **Property features**
-* Produces a **compatibility score (%)**
-* Partial mismatches subtract points (not zeroed out)
+Scores are calculated using weighted criteria, with partial mismatches resulting in point deductions rather than complete exclusion. The final score is normalized to a 0-100 percentage.
 
-### 🔗 Direct Contact & Profile Sharing
+### Direct Contact System
 
-* Listing detail pages show **verified landlord email + phone**
-* Renters can launch pre-filled `mailto:` links that include the listing name
-* Hosts see condensed renter profiles (role, preferences, phone) before replying
-* Optional Calendly links keep tour scheduling in one place
+- Listing detail pages display landlord contact information (email and phone)
+- Contact details are only revealed when authenticated users click contact buttons
+- Pre-filled email templates include listing context
+- Optional Calendly integration for tour scheduling
+- Unauthenticated users are redirected to login when attempting to contact landlords
 
-### 🎨 UI/UX
+### Optional Authentication
 
-* **Responsive design**
-* Pure **CSS styling** (no inline React CSS)
-* **Grid layout** for listings
-* Match score badge, save & share buttons
-* Accessibility-friendly markup
+- Listings can be browsed without authentication
+- Match scores and personalized features require authentication
+- Landlords can toggle between viewing their own listings and viewing all listings as renters would
+- Contact actions (email, phone, save) require authentication
 
-### 🔒 Security
-
-* JWT authentication
-* CSRF/OAuth state handling
-* Pydantic schema validation
-* PostgreSQL with SQLAlchemy ORM
-
-### 💸 Payments & Web3
-
-* Wallet connect endpoint persists renter/landlord wallet addresses
-* Blockchain route logs visit scheduling/deposit confirmations with generated tx hashes
-* Payment API simulates 402pay charges, stores receipts, and exposes a history endpoint
-
----
-
-## 🛠 Tech Stack
+## Technology Stack
 
 ### Frontend
 
-* React.js + React Router
-* Context API (Auth state management)
-* Axios (API requests)
-* CSS (global styles)
-* React Icons
+- React 18 with React Router for navigation
+- Context API for authentication state management
+- Axios for HTTP requests
+- CSS for styling (no CSS-in-JS)
+- React Icons for iconography
 
 ### Backend
 
-* FastAPI (Python)
-* PostgreSQL + SQLAlchemy ORM
-* Alembic (DB migrations)
-* Authlib (Google OAuth)
-* python-jose (JWT tokens)
+- FastAPI (Python 3.11+)
+- PostgreSQL with SQLAlchemy ORM
+- Alembic for database migrations
+- Authlib for Google OAuth
+- python-jose for JWT token handling
+- Celery with Redis for background job processing
+- Bcrypt for password hashing
 
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 Nestopia/
-│
 ├── backend/
 │   ├── app/
-│   │   ├── routers/        # API routes
-│   │   ├── crud/           # DB operations
-│   │   ├── db/             # Models & session
-│   │   ├── core/           # Security & config
-│   │   ├── schemas/        # Pydantic schemas
-│   │   └── main.py         # FastAPI entrypoint
-│   ├── alembic/            # DB migrations
+│   │   ├── routers/          # API route handlers
+│   │   ├── crud/             # Database operations
+│   │   ├── db/               # SQLAlchemy models and session
+│   │   ├── core/             # Security and configuration
+│   │   ├── schemas/          # Pydantic request/response models
+│   │   ├── services/         # Business logic and background jobs
+│   │   └── utils/            # Matching algorithms and utilities
+│   ├── alembic/              # Database migration files
+│   ├── uploads/              # User-uploaded files
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── context/        # Auth context
-│   │   ├── pages/          # Listings, Profile, Auth flows
-│   │   └── index.css       # Global styles
+│   │   ├── components/       # Reusable React components
+│   │   ├── context/          # React context providers
+│   │   ├── pages/            # Route-level page components
+│   │   ├── api/              # API client functions
+│   │   └── index.css         # Global stylesheet
 │   └── package.json
 │
 └── README.md
 ```
 
----
-
-## 🚀 Getting Started
+## Installation and Setup
 
 ### Prerequisites
 
-* Node.js ≥ 18
-* Python ≥ 3.11
-* PostgreSQL
+- Node.js 18 or higher
+- Python 3.11 or higher
+- PostgreSQL 14 or higher
+- Redis (for background job processing)
 
 ### Backend Setup
 
+1. Navigate to the backend directory:
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Apply DB migrations
-alembic upgrade head
-
-# Run backend
-uvicorn app.main:app --reload
 ```
 
-Backend URL: `http://127.0.0.1:8000`
+2. Create and activate a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-### Environment Configuration
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-Create a `.env` file inside `backend/` (or export the variables) so every service advertised above can actually start. The following template covers everything the code expects:
-
+4. Configure environment variables by creating a `.env` file in the `backend/` directory:
 ```env
-DATABASE_URL=postgresql+psycopg2://nestopia:nestopia@localhost:5432/nestopia
-SECRET_KEY=generate_a_64_char_random_string
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/nestopia
+SECRET_KEY=your_64_character_secret_key_here
 FRONTEND_URL=http://localhost:3000
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# Matching flags (see details below)
+# Matching configuration
 USE_ML_MATCHING=true
 USE_SEMANTIC_MATCHING=false
 
-# 402pay integration
-PAYMENT_PROVIDER=402pay
-PAYMENT_API_KEY=sandbox_402pay_key
-PAYMENT_WEBHOOK_SECRET=sandbox_webhook_secret
+# Payment integration (future improvement - not currently implemented)
+# PAYMENT_PROVIDER=402pay
+# PAYMENT_API_KEY=your_api_key
+# PAYMENT_WEBHOOK_SECRET=your_webhook_secret
 
-# h402 paywall defaults (BSC test wallet)
-H402_ENABLED=true
-H402_FACILITATOR_URL=http://localhost:9402
-H402_NAMESPACE=evm
-H402_NETWORK_ID=56
-H402_TOKEN_ADDRESS=0x55d398326f99059fF775485246999027B3197955
-H402_TOKEN_SYMBOL=USDT
-H402_TOKEN_DECIMALS=6
-H402_AMOUNT_FORMAT=humanReadable
-H402_PAY_TO_ADDRESS=0xd78d20FB910794df939eB2A758B367d7224733bc
-H402_RPC_URL=https://bsc-dataseed.binance.org
-H402_CHAIN_NAME=Binance Smart Chain
-H402_RESOURCE_BASE=http://localhost:3000/payments
+# h402 payment rail (future improvement - not currently implemented)
+# H402_ENABLED=false
+# H402_FACILITATOR_URL=http://localhost:9402
+# H402_NAMESPACE=evm
+# H402_NETWORK_ID=56
+# H402_TOKEN_ADDRESS=0x55d398326f99059fF775485246999027B3197955
+# H402_TOKEN_SYMBOL=USDT
+# H402_TOKEN_DECIMALS=6
+# H402_PAY_TO_ADDRESS=your_wallet_address
+# H402_RPC_URL=https://bsc-dataseed.binance.org
 
 # Background workers
 REDIS_URL=redis://localhost:6379/0
 
-# OAuth + sessions
+# OAuth configuration
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-SESSION_SECRET_KEY=another_random_string
+SESSION_SECRET_KEY=your_session_secret_key
 ```
 
-Notes:
-
-- `USE_SEMANTIC_MATCHING=true` requires the optional dependencies shown in `backend/requirements.txt` (uncomment `sentence-transformers` and `torch`) and downloads an ~80 MB model at startup.
-- `SECRET_KEY` and `SESSION_SECRET_KEY` should both be unique; rotate them whenever credentials are compromised.
-- For production deployments, point `DATABASE_URL`, `REDIS_URL`, and the 402pay API credentials at managed services instead of localhost.
-
-#### Frontend Environment
-
-Inside `frontend/`, create a `.env.local` to keep API URLs in sync with your backend:
-
-```env
-REACT_APP_API_BASE_URL=http://localhost:8000
-REACT_APP_API_URL=http://localhost:8000
-REACT_APP_H402_RPC_URL=https://bsc-dataseed.binance.org
-REACT_APP_ENABLE_H402=false
+5. Run database migrations:
+```bash
+alembic upgrade head
 ```
 
-The first variable drives Axios + Google OAuth redirects, while `REACT_APP_API_URL` is used only for building absolute asset URLs (profile pictures, images).
-Set `REACT_APP_ENABLE_H402=true` only after the facilitator + wallet flow is healthy; otherwise the UI hides the paywall card.
+6. Start the development server:
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at `http://127.0.0.1:8000`. Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
 
 ### Frontend Setup
 
+1. Navigate to the frontend directory:
 ```bash
 cd frontend
+```
+
+2. Install dependencies:
+```bash
 npm install
+```
+
+3. Create a `.env.local` file:
+```env
+REACT_APP_API_BASE_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8000
+# REACT_APP_H402_RPC_URL=https://bsc-dataseed.binance.org
+# REACT_APP_ENABLE_H402=false
+```
+
+4. Start the development server:
+```bash
 npm start
 ```
 
-Frontend URL: `http://localhost:3000`
+The application will be available at `http://localhost:3000`.
 
-### Background Workers & Match Jobs
+### Background Workers
 
-The daily match pipeline is delivered through Celery + Redis. In development you can run everything from the `backend/` directory once Redis is available locally:
+The matching system uses Celery for background job processing. To run the workers:
 
+1. Start Redis:
 ```bash
-redis-server --daemonize yes               # or use Docker
-celery -A celery_app.celery worker -l info &
+redis-server
+```
+
+2. Start the Celery worker:
+```bash
+cd backend
+celery -A celery_app.celery worker -l info
+```
+
+3. Start the Celery beat scheduler:
+```bash
 celery -A celery_app.celery beat -l info
 ```
 
-`celery_app.py` schedules `compute_daily_matches` every 24 h, but you can also run it manually via `celery -A celery_app.celery call app.services.matching.compute_daily_matches`.
-
-### h402 Facilitator (402pay rail)
-
-The FastAPI backend relays payment headers to a lightweight TypeScript facilitator so we can verify/settle transactions using [`@bit-gpt/h402`](https://github.com/bit-gpt/h402). Spin it up next to your backend:
-
+The beat scheduler runs the daily matching job every 24 hours. You can also trigger it manually:
 ```bash
-git clone https://github.com/bit-gpt/h402 vendor/h402   # one-time setup
-cd vendor/h402
-pnpm install
-PORT=9402 PRIVATE_KEY=0xyourLandlordWallet pnpm --filter facilitator dev
+celery -A celery_app.celery call app.services.matching.compute_daily_matches
 ```
 
-`PRIVATE_KEY` signs settlement transactions and should point to the landlord wallet you advertised in `H402_PAY_TO_ADDRESS`. The facilitator exposes `/verify` and `/settle` over HTTP; the backend calls `/verify` during `POST /api/payments/confirm`.
-
----
-
-## 📊 Compatibility Score
-
-The **compatibility score** compares renter needs vs landlord listings and preference rules:
-
-* ✅ Budget range vs. rent price
-* ✅ Bedrooms / Bathrooms vs. listing specs
-* ✅ Renter unit amenities vs. property amenities
-* ✅ Renter building amenities vs. building features
-* ✅ Pets, smoking, visitor policies vs. landlord requirements
-* ✅ Lease length and move-in timing vs. availability
-* ✅ Household size vs. max occupants
-* ✅ Custom preference tags vs. listing tags
-
-Even if some fields don’t match, a listing is not excluded — points are deducted instead of forcing a **0%** score. The score is normalized (0–1) after weighting each category.
+## Compatibility Scoring Algorithm
 
 ### Weighting Matrix
 
-The rule-based scorer (`backend/app/utils/match.py`) uses the following weights before normalization:
+The rule-based scoring algorithm uses the following weights:
 
 | Category | Weight |
-| --- | --- |
+|----------|--------|
 | Budget fit | 20 |
 | Location & neighborhood | 15 |
 | Bedrooms | 10 |
@@ -275,90 +256,247 @@ The rule-based scorer (`backend/app/utils/match.py`) uses the following weights 
 | Custom tags | 4 |
 | Landlord requirements enforcement | 8 |
 
-Because the scorer subtracts proportional penalties instead of hard-failing checks, contributors can experiment safely by tweaking these weights—remember to keep their sum at 100 before normalization.
+Total: 100 (normalized to 0-1 scale)
 
 ### Preference Schemas
 
-**Renters store:**
+**Renter Preferences:**
+- Budget range (min/max)
+- Bedroom and bathroom requirements
+- Household size
+- Preferred locations
+- Move-in date preference
+- Lease length preference
+- Property amenities list
+- Building amenities list
+- Pet policy preference
+- Smoking preference
+- Noise tolerance
+- Visitor flexibility
+- Custom preference tags
 
-- Housing basics: budget min/max, bedrooms, bathrooms, household size, preferred locations, move-in date, lease length
-- Property amenities (`amenities`) and building amenities (`building_amenities`)
-- Policies: pets allowed, smoking preference, noise tolerance, visitor flexibility
-- Custom preference tags (`custom_preferences`)
+**Landlord Preferences:**
+- Tenant requirements list
+- Default lease length
+- Pet policy
+- Custom requirements
 
-**Landlords store:**
+**Listing Properties:**
+- Property type
+- Location
+- Rent price
+- Bedrooms and bathrooms
+- Square footage
+- Available from date
+- Maximum occupants
+- Amenities
+- Building features
+- Pet policy
+- Lease terms
+- Custom tags
+- Neighborhood description and profile
 
-- Tenant requirements (`tenant_preferences`) and optional custom rules (`custom_requirements`)
-- Default lease length and pet policy
-- Listings extend this profile with property details, neighborhood profile, building features, and custom tags for matching.
+### Machine Learning Matching
 
-### ML & Semantic Matching Modes
+When `USE_ML_MATCHING=true`, the system uses an enhanced matching pipeline that incorporates:
 
-- `USE_ML_MATCHING=true` spins up the `SmartMatcher` pipeline (`backend/app/services/matching.py`) which layers collaborative filtering signals (saved listings, visit activity) on top of the deterministic weights shown above.
-- `USE_SEMANTIC_MATCHING=true` additionally loads sentence embeddings (via `sentence-transformers` + `torch`) so free-form descriptions and tags can be compared. Expect a one-time model download on first boot.
-- When both flags are `false`, Celery falls back to the pure rule-based scorer. Use this mode for lightweight environments or unit tests.
+- Behavioral signals from user interactions (saved listings, visit requests)
+- Collaborative filtering based on similar users' preferences
+- Enhanced location matching using geographic proximity
+- Improved timing matching with date parsing
 
----
+When `USE_SEMANTIC_MATCHING=true`, the system additionally uses sentence embeddings to compare free-form text fields like descriptions and custom tags. This requires the `sentence-transformers` and `torch` packages, which will download an approximately 80 MB model on first use.
 
-## 📜 License
+## API Reference
 
-Nestopia is released under the **MIT License**.
-See the `LICENSE` file for details.
+All API endpoints are prefixed with `/api`. Most endpoints require authentication via JWT token in the `Authorization: Bearer <token>` header. Interactive API documentation is available at `/docs` when the server is running.
 
-## 📡 API Reference
+### Authentication Endpoints
 
-All endpoints are grouped under the `/api` prefix and require `Authorization: Bearer <JWT>` unless noted. Interactive OpenAPI docs are available at `http://127.0.0.1:8000/docs`.
+- `POST /api/auth/signup` - Create a new user account (renter or landlord)
+- `POST /api/auth/login` - Authenticate with email and password
+- `GET /api/auth/google/login?role={renter|landlord}` - Initiate Google OAuth flow
+- `GET /api/auth/google/callback` - Handle Google OAuth callback
+- `POST /api/auth/password-reset/request` - Request password reset token
+- `POST /api/auth/password-reset/confirm` - Confirm password reset with token
 
-**Authentication & Accounts**
-- `POST /api/auth/signup`, `POST /api/auth/login` – email/password flows for renters & landlords.
-- `GET /api/auth/google/login?role={renter|landlord}` → `GET /api/auth/google/callback` – Google OAuth handoff (uses `FRONTEND_URL` for redirects).
-- `GET /api/users/me`, `PATCH /api/users/me` – fetch/update profile basics; `POST /api/users/change-password` enforces the bcrypt hash update.
+### User Endpoints
 
-**Preferences, Listings & Matches**
-- `POST/GET /api/users/preferences/renter|landlord` – store normalized preference payloads referenced by the matcher.
-- `POST /api/listings` (landlords only), `PUT/DELETE /api/listings/{id}`, `POST /api/listings/upload-image` – CRUD + asset uploads (saved under `backend/uploads`).
-- `GET /api/listings` – renters receive compatibility scores per listing; landlords see only their inventory.
-- `POST/DELETE /api/listings/saved/{listing_id}`, `GET /api/listings/saved` – favorites + share cards.
-- `GET /api/matches/daily` – latest Celery-produced matches (top 3 by default).
+- `GET /api/users/me` - Get current user profile (requires authentication)
+- `PATCH /api/users/me` - Update current user profile (requires authentication)
+- `POST /api/users/change-password` - Change user password (requires authentication)
 
-**Tokens & Credits**
-- `GET /api/tokens/balance`, `POST /api/tokens/spend` – feature gating for premium flows (matching boosts, early tour access, etc.).
+### Preferences Endpoints
 
-**Payments, Wallets & Blockchain Log**
-- `POST /api/payments/initiate` – creates a payment intent and returns the h402 payment requirements document (include `amount` in cents). The React client uses this payload with `@bit-gpt/h402` + `viem` to sign a transaction in the renter’s wallet.
-- `POST /api/payments/confirm` – accepts the base64 payment header returned by `createPaymentHeader`, relays it to the facilitator, and marks the receipt `completed` when on-chain verification succeeds.
-- `GET /api/payments`, `GET /api/payments/{id}` – fetch historical receipts along with blockchain references.
-- `POST /api/wallet/connect`, `GET /api/wallet` – stores EVM-style addresses (basic validation only).
-- `POST /api/blockchain/schedule-visit`, `POST /api/blockchain/deposit`, `GET /api/blockchain/transactions` – append-only log with generated tx hashes to audit visit scheduling and deposits.
+- `POST /api/preferences/renter` - Create or update renter preferences (requires authentication, renter role)
+- `GET /api/preferences/renter` - Get renter preferences (requires authentication, renter role)
+- `POST /api/preferences/landlord` - Create or update landlord preferences (requires authentication, landlord role)
+- `GET /api/preferences/landlord` - Get landlord preferences (requires authentication, landlord role)
 
-## ✅ Testing & Quality
+### Listing Endpoints
 
-- **Backend**: once dependencies are installed, run `pytest` from `backend/` (tests live under `backend/tests/`, add suites as you touch modules). Pair with `ruff` or `black` if you add new linters.
-- **Database migrations**: use `alembic revision --autogenerate -m "describe change"` then `alembic upgrade head`. Keep migration files in `backend/alembic/versions`.
-- **Frontend**: `npm test` for Jest + React Testing Library suites, `npm run build` before pushing to CI/CD.
-- **Type/lint checks**: `npm run lint` isn’t defined, so rely on the default CRA ESLint config (runs automatically during `npm start` / `npm test`); add a script if stricter linting is needed.
+- `GET /api/listings` - Get all listings (optional authentication)
+  - Unauthenticated: all listings without match scores
+  - Renters: all listings with match scores
+  - Landlords: own listings by default, or all listings if `view_as_renter=true` query parameter is set
+- `GET /api/listings/{id}` - Get specific listing details (no authentication required)
+- `POST /api/listings` - Create new listing (requires authentication, landlord role)
+- `PUT /api/listings/{id}` - Update listing (requires authentication, landlord role, must own listing)
+- `DELETE /api/listings/{id}` - Delete listing (requires authentication, landlord role, must own listing)
+- `POST /api/listings/upload-image` - Upload listing image (no authentication required, should be restricted in production)
+- `POST /api/listings/saved/{listing_id}` - Save listing (requires authentication)
+- `DELETE /api/listings/saved/{listing_id}` - Unsave listing (requires authentication)
+- `GET /api/listings/saved` - Get saved listings (requires authentication)
 
-## 🚢 Deployment Checklist
+### Matching Endpoints
 
-- Backend: `uvicorn app.main:app` works for dev; prefer `gunicorn -k uvicorn.workers.UvicornWorker app.main:app` behind an HTTPS reverse proxy in production.
-- Database: provision PostgreSQL 14+ with automated backups; run Alembic migrations on boot (e.g., via entrypoint script).
-- Frontend: `npm run build` then host the `frontend/build` directory on the same domain or a CDN; set `REACT_APP_API_BASE_URL` to the public API URL before building.
-- Background jobs: deploy Redis (or another Celery broker) and run `celery worker` + `celery beat` as dedicated processes/containers; monitor for failures.
-- Static uploads: `uploads/` currently writes to disk; for production, mount persistent storage or swap in S3/GCS to avoid losing avatars and listing photos.
-- Payments: keep the h402 facilitator close to FastAPI (same VPC) and protect it with ACLs—its private key can release funds. Rotate `H402_PAY_TO_ADDRESS`/`PRIVATE_KEY` pairs as you onboard new landlord wallets.
+- `GET /api/matches/daily` - Get daily matches for current user (requires authentication, renter role)
 
-## 🔐 Security & Ops Notes
+### Statistics Endpoints
 
-- Rotate `SECRET_KEY`, OAuth secrets, and 402pay API keys via your secrets manager; never commit `.env` files.
-- Enforce HTTPS/TLS termination (Caddy, Nginx, or a cloud load balancer) so JWTs aren’t sent in clear text.
-- Add rate limiting and IP throttling in front of FastAPI (e.g., `slowapi`) to protect auth and contact endpoints.
-- Centralize logging/monitoring (OpenTelemetry, Sentry, or Logtail) to observe contact handoff errors, payment errors, and Celery retries.
-- Plan for privacy: purge personal data on user deletion and scrub logs of PII where possible.
+- `GET /api/stats/summary` - Get platform statistics (no authentication required)
 
-## 🗺️ Roadmap & Known Gaps
+### Payment Endpoints (Future Improvement)
 
-- Real payment rails (402pay webhooks + token crediting) are scaffolded but commented out—finish implementation before charging real customers.
-- Semantic matching defaults to off and requires additional dependencies; document the model checkpoint you standardize on once validated.
-- Automated test coverage is minimal today; prioritize smoke tests for auth, listings CRUD, and contact workflows.
-- Push notifications / SMS / real-time contact status indicators are not yet implemented; current UX relies on email + manual follow-up.
-- File storage, rate limiting, and audit logs need production-ready replacements to meet compliance requirements.
+Payment functionality is planned but not currently implemented. The following endpoints exist in the codebase but are not active:
+
+- `POST /api/payments/initiate` - Create payment intent
+- `POST /api/payments/confirm` - Confirm payment with h402 header
+- `GET /api/payments` - Get payment history
+- `GET /api/payments/{id}` - Get specific payment record
+
+### Wallet Endpoints (Future Improvement)
+
+Wallet functionality is planned but not currently implemented:
+
+- `POST /api/wallet/connect` - Store wallet address
+- `GET /api/wallet` - Get stored wallet address
+
+### Blockchain Endpoints (Future Improvement)
+
+Blockchain transaction logging is planned but not currently implemented:
+
+- `POST /api/blockchain/schedule-visit` - Log visit scheduling transaction
+- `POST /api/blockchain/deposit` - Log deposit transaction
+- `GET /api/blockchain/transactions` - Get blockchain transaction log
+
+## Database Schema
+
+The application uses PostgreSQL with the following main tables:
+
+- `users` - User accounts with authentication and profile information
+- `listings` - Property listings with details and images
+- `renter_preferences` - Renter preference profiles
+- `landlord_preferences` - Landlord preference profiles
+- `saved_listings` - Many-to-many relationship between users and saved listings
+- `daily_matches` - Computed compatibility matches
+- `visit_requests` - Visit scheduling requests
+- `payment_records` - Payment transaction records
+- `blockchain_transactions` - Blockchain transaction audit log
+
+Database migrations are managed with Alembic. Create new migrations with:
+```bash
+alembic revision --autogenerate -m "description of changes"
+alembic upgrade head
+```
+
+## Testing
+
+### Backend Testing
+
+Run tests from the backend directory:
+```bash
+cd backend
+pytest
+```
+
+Tests are located in the `backend/tests/` directory. Add test suites as you develop new features.
+
+### Frontend Testing
+
+Run tests from the frontend directory:
+```bash
+cd frontend
+npm test
+```
+
+The project uses Jest and React Testing Library. ESLint runs automatically during development.
+
+## Deployment
+
+### Backend Deployment
+
+For production, use a production ASGI server:
+```bash
+gunicorn -k uvicorn.workers.UvicornWorker app.main:app
+```
+
+Deploy behind an HTTPS reverse proxy (Nginx, Caddy, or cloud load balancer). Set environment variables through your deployment platform's secrets management.
+
+### Frontend Deployment
+
+Build the production bundle:
+```bash
+cd frontend
+npm run build
+```
+
+Deploy the `frontend/build` directory to a static hosting service or CDN. Ensure `REACT_APP_API_BASE_URL` is set to your production API URL before building.
+
+### Database
+
+Use managed PostgreSQL with automated backups. Run migrations as part of your deployment process:
+```bash
+alembic upgrade head
+```
+
+### Background Workers
+
+Deploy Celery workers and beat scheduler as separate processes or containers. Monitor worker health and job completion rates.
+
+### File Storage
+
+The `uploads/` directory currently stores files on disk. For production, migrate to object storage (S3, GCS, or similar) or mount persistent volumes.
+
+## Security Considerations
+
+- Rotate `SECRET_KEY` and `SESSION_SECRET_KEY` regularly and whenever credentials are compromised
+- Never commit `.env` files or secrets to version control
+- Enforce HTTPS/TLS in production to protect JWT tokens
+- Implement rate limiting on authentication and contact endpoints
+- Use a secrets management service for production credentials
+- Regularly audit and purge personal data according to privacy policies
+- Implement proper CORS configuration for production domains
+- Consider adding request rate limiting middleware (e.g., `slowapi`)
+- Monitor for suspicious activity and failed authentication attempts
+
+## Monitoring and Logging
+
+- Set up centralized logging (OpenTelemetry, Sentry, or similar)
+- Monitor API response times and error rates
+- Track background job completion and failures
+- Monitor database query performance
+- Set up alerts for critical failures (payment processing, authentication issues)
+
+## Known Limitations and Future Improvements
+
+Current limitations:
+
+- Semantic matching requires additional dependencies and model downloads
+- Test coverage is minimal and should be expanded
+- File storage uses local filesystem (should migrate to object storage for production)
+- Rate limiting is not currently implemented
+- Real-time notifications are not implemented
+- Audit logging needs production-ready implementation
+
+Planned future improvements:
+
+- Payment integration with 402pay and h402 payment rail
+- Wallet connection and management
+- Blockchain transaction logging for visit scheduling and deposits
+- Enhanced matching algorithms with machine learning
+- Real-time notifications for contact requests and listing updates
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
