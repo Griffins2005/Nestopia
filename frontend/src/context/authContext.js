@@ -6,6 +6,17 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
+const extractDetail = (error) => {
+  const detail = error?.response?.data?.detail;
+  if (!detail) {
+    return { code: null, message: null };
+  }
+  if (typeof detail === "string") {
+    return { code: detail, message: detail };
+  }
+  return { code: detail.code, message: detail.message };
+};
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -28,6 +39,29 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Axios interceptor to handle 401s globally
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && location.pathname !== "/login" && location.pathname !== "/signup") {
+          // Only redirect if not already on auth pages
+          const currentPath = location.pathname;
+          navigate("/login", {
+            state: {
+              from: { pathname: currentPath },
+              message: "Your session has expired. Please sign in again.",
+            },
+          });
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [navigate, location]);
+
   // Util: Save auth to state + localStorage
   const saveAuth = (token, user) => {
     setToken(token);
@@ -46,59 +80,31 @@ export const AuthProvider = ({ children }) => {
 
   // ----- SIGN UP -----
   async function signup(email, password, role) {
-    try {
-      const res = await axios.post("/api/auth/signup", { email, password, role });
-      const { access_token } = res.data;
-      const userRes = await axios.get("/api/users/me", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      saveAuth(access_token, userRes.data);
-      navigate(`/onboarding?role=${role}`);
-    } catch (err) {
-      // Handle Google-only or duplicate email errors
-      if (err.response && err.response.status === 403 && err.response.data.detail === "google_only") {
-        throw new Error("This account was created with Google. Please use 'Continue with Google' to log in.");
-      }
-      if (err.response && err.response.status === 400) {
-        throw new Error("An account already exists with this email and role.");
-      }
-      throw new Error("Sign up failed. Please try again.");
-    }
+    const res = await axios.post("/api/auth/signup", { email, password, role });
+    const { access_token } = res.data;
+    const userRes = await axios.get("/api/users/me", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    saveAuth(access_token, userRes.data);
+    navigate(`/onboarding?role=${role}`);
   }
 
   // ----- LOGIN -----
   async function login(email, password, role) {
-    try {
-      const res = await axios.post("/api/auth/login", { email, password, role });
-      const { access_token } = res.data;
-      const userRes = await axios.get("/api/users/me", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      saveAuth(access_token, userRes.data);
+    const res = await axios.post("/api/auth/login", { email, password, role });
+    const { access_token } = res.data;
+    const userRes = await axios.get("/api/users/me", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    saveAuth(access_token, userRes.data);
 
-      if (!userRes.data.renter_preferences && userRes.data.role === "renter") {
-        navigate("/onboarding?role=renter");
-      } else if (!userRes.data.landlord_preferences && userRes.data.role === "landlord") {
-        navigate("/onboarding?role=landlord");
-      } else {
-        const from = location.state?.from?.pathname || "/profile";
-        navigate(from);
-      }
-    } catch (err) {
-      if (
-        err.response &&
-        err.response.status === 403 &&
-        err.response.data.detail === "google_only"
-      ) {
-        throw new Error("This account was created with Google. Please use 'Continue with Google' to log in.");
-      }
-      if (err.response && err.response.status === 404) {
-        throw new Error("No account is associated with that email and role. Please sign up.");
-      }
-      if (err.response && err.response.status === 401) {
-        throw new Error("Incorrect email or password.");
-      }
-      throw new Error("Login failed. Please try again.");
+    if (!userRes.data.renter_preferences && userRes.data.role === "renter") {
+      navigate("/onboarding?role=renter");
+    } else if (!userRes.data.landlord_preferences && userRes.data.role === "landlord") {
+      navigate("/onboarding?role=landlord");
+    } else {
+      const from = location.state?.from?.pathname || "/profile";
+      navigate(from);
     }
   }
 
@@ -125,8 +131,9 @@ export const AuthProvider = ({ children }) => {
         navigate(from);
       }
     } catch (err) {
+      const detail = extractDetail(err);
       // Google tried to login but user actually created with email/password before
-      if (err.response && err.response.status === 403 && err.response.data.detail === "email_only") {
+      if (err.response && err.response.status === 403 && detail.code === "email_only") {
         navigate("/login", {
           state: {
             error: "This account was created with email & password. Please log in using email, or sign up with Google for a new account.",

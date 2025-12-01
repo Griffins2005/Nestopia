@@ -2,23 +2,33 @@
 import api from "./axiosConfig";
 
 /**
- * CREATE A STRIPE PAYMENT INTENT
- * POST /api/payments/create-payment-intent
- * payload example:
- * {
- *   amount: 1000,               // in cents ($10.00)
- *   currency: "usd",
- *   metadata: { package: "100_tokens" }
- * }
+ * Initiate a 402pay charge (simulated server-side).
+ * POST /api/payments/initiate
  */
-export function createPaymentIntent(payload) {
-  return api.post("/api/payments/create-payment-intent", payload);
+export function initiatePayment(payload) {
+  return api.post("/api/payments/initiate", payload);
 }
 
 /**
- * (Optional) If you have an endpoint to fetch available token packages:
- * GET /api/payments/packages
+ * Get the authenticated user's payment history.
+ * GET /api/payments
  */
-export function getTokenPackages() {
-  return api.get("/api/payments/packages");
+export function listPayments() {
+  return api.get("/api/payments");
+}
+
+/**
+ * Fetch an individual payment receipt.
+ * GET /api/payments/:id
+ */
+export function getPayment(paymentId) {
+  return api.get(`/api/payments/${paymentId}`);
+}
+
+/**
+ * Confirm a signed h402 payment header.
+ * POST /api/payments/confirm
+ */
+export function confirmPayment(payload) {
+  return api.post("/api/payments/confirm", payload);
 }

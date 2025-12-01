@@ -1,50 +1,88 @@
 # app/services/matching.py
+from datetime import date
+
 from celery_app import celery
 from sqlalchemy.orm import Session
+
+from app.crud.match import create_daily_match, delete_matches_for_date
+from app.db.models import LandlordPreferences, Listing, RenterPreferences
 from app.db.session import SessionLocal
-from app.crud.crud_match import create_daily_match, delete_matches_for_date
-from app.crud.crud_preferences import get_renter_preferences
-from app.crud.crud_listing import get_all_listings
-from datetime import date
+from app.core.config import settings
+from app.utils.match import compute_compatibility_score
+from app.utils.ml_match import SmartMatcher, compute_user_behavior_features, find_similar_users
+
+
+# Initialize smart matcher (can be configured via env vars)
+USE_ML_MATCHING = settings.USE_ML_MATCHING
+USE_SEMANTIC = settings.USE_SEMANTIC_MATCHING
+
+smart_matcher = SmartMatcher(use_semantic=USE_SEMANTIC) if USE_ML_MATCHING else None
+
 
 @celery.task
 def compute_daily_matches():
+    """
+    Compute daily matches using AI-enhanced matching if enabled,
+    otherwise falls back to rule-based scoring.
+    """
     db: Session = SessionLocal()
     today = date.today()
 
-    # 1. Clear any existing matches for today (if re-running)
     delete_matches_for_date(db, today)
 
-    # 2. Fetch all renters who have preferences
-    renters = db.query(get_renter_preferences).all()  # placeholder; fix below
-    # Actually:
-    from app.db.models import RenterPreferences
     renters = db.query(RenterPreferences).all()
-
-    # 3. Fetch all listings
-    from app.db.models import Listing
     listings = db.query(Listing).all()
 
-    def compatibility_score(renter_pref, listing):
-        score = 0
-        price_diff = abs(renter_pref.max_rent - listing.rent_price)
-        score += max(0, 100 - price_diff) * 0.4
-        if renter_pref.desired_location.lower() in listing.location.lower():
-            score += 40
-        if renter_pref.pets_allowed and "no pets" in listing.description.lower():
-            score -= 20
-        else:
-            score += 20
-        return max(score, 0)
+    landlord_pref_map = {
+        lp.user_id: lp for lp in db.query(LandlordPreferences).all()
+    }
 
     for renter_pref in renters:
-        scores = []
+        ranked = []
+        
+        # Pre-compute similar users for collaborative filtering (if ML enabled)
+        similar_users_data = None
+        if smart_matcher:
+            similar_users = find_similar_users(db, renter_pref, limit=10)
+            similar_users_data = []
+            for su in similar_users:
+                for listing_id in su.get('saved_listing_ids', []):
+                    similar_users_data.append({'saved_listing_id': listing_id})
+        
         for listing in listings:
-            score = compatibility_score(renter_pref, listing)
-            scores.append((listing.id, score))
-        scores.sort(key=lambda x: x[1], reverse=True)
-        top3 = scores[:3]
-        for listing_id, score in top3:
-            create_daily_match(db, renter_pref.user_id, listing_id, score, today)
-
+            landlord_pref = landlord_pref_map.get(listing.landlord_id)
+            
+            if smart_matcher:
+                # AI-enhanced matching
+                user_behavior = compute_user_behavior_features(
+                    db, renter_pref.user_id, listing.id
+                )
+                
+                score, explanation = smart_matcher.compute_enhanced_score(
+                    renter_pref,
+                    landlord_pref,
+                    listing,
+                    user_behavior=user_behavior,
+                    similar_users_prefs=similar_users_data
+                )
+            else:
+                # Fallback to rule-based
+                score = compute_compatibility_score(renter_pref, landlord_pref, listing)
+                explanation = {"base_score": score}
+            
+            ranked.append((listing.id, score, explanation))
+        
+        # Sort by score
+        ranked.sort(key=lambda item: item[1], reverse=True)
+        
+        # Store top 3 matches (can be configurable)
+        for listing_id, score, explanation in ranked[:3]:
+            create_daily_match(
+                db,
+                renter_pref.user_id,
+                listing_id,
+                float(score),
+                today,
+            )
+    
     db.close()

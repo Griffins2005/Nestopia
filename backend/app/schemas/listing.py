@@ -1,5 +1,5 @@
 #app/schemas/listing.py
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Any
 from datetime import datetime
 
@@ -25,8 +25,10 @@ class ListingBase(BaseModel):
     max_occupants: int = 1
     neighborhood_type: Optional[str] = None
     neighborhood_description: Optional[str] = None
-    amenities: List[str] = []
-    building_features: List[str] = []
+    neighborhood_profile: List[str] = Field(default_factory=list)
+    amenities: List[str] = Field(default_factory=list)
+    building_features: List[str] = Field(default_factory=list)
+    custom_tags: List[str] = Field(default_factory=list)
     pets_allowed: bool = True
     lease_length: Optional[int] = None
     images: List[str] = []
@@ -50,8 +52,10 @@ class ListingUpdate(BaseModel):
     max_occupants: Optional[int] = None
     neighborhood_type: Optional[str] = None
     neighborhood_description: Optional[str] = None
+    neighborhood_profile: Optional[List[str]] = None
     amenities: Optional[List[str]] = None
     building_features: Optional[List[str]] = None
+    custom_tags: Optional[List[str]] = None
     pets_allowed: Optional[bool] = None
     lease_length: Optional[int] = None
     images: Optional[List[str]] = None
@@ -74,8 +78,10 @@ class ListingResponse(BaseModel):
     max_occupants: Optional[int] = None
     neighborhood_type: Optional[str] = None
     neighborhood_description: Optional[str] = None
+    neighborhood_profile: Optional[List[str]] = []
     amenities: Optional[List[Any]] = []
     building_features: Optional[List[Any]] = []
+    custom_tags: Optional[List[str]] = []
     pets_allowed: Optional[bool] = None
     lease_length: Optional[int] = None
     images: Optional[List[str]] = []

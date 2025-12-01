@@ -102,15 +102,18 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="profile-page-main">
-      <div className="profile-header-row">
+    <div className="profile-shell">
+      <header className="profile-hero card-surface">
         <div>
-          <h1 className="profile-main-title">Profile</h1>
-          <div className="profile-main-desc">
-            Manage your account and preferences
-          </div>
+          <p className="eyebrow soft">Account</p>
+          <h1>Manage your profile & renting preferences</h1>
+          <p>
+            Keep your details fresh so matches feel personal. Update your bio,
+            location, and preferences anytime.
+          </p>
         </div>
-      </div>
+      </header>
+
       <div className="profile-tab-row">
         {tabs.map((t) => (
           <button
@@ -130,39 +133,35 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* PROFILE TAB */}
-      {tab === "profile" && (
-        <div>
-          {editingProfile ? (
-            <ProfileEditForm
-              user={user}
-              onSave={handleProfileSave}
-              onCancel={() => setEditingProfile(false)}
-            />
-          ) : (
-            <ProfileDetailsCard user={user} onEdit={() => setEditingProfile(true)} />
-          )}
-
-          {!editingProfile && (
-            <button
-              className="profile-btn profile-btn-outline"
-              onClick={() => setChangingPassword(true)}
-              disabled={changingPassword}
-            >
-              Change Password
-            </button>
-          )}
-          {profileMessage && (
-            <div className="form-success">{profileMessage}</div>
-          )}
-          {changingPassword && (
-            <ChangePasswordForm
-              user={user}
-              onDone={() => setChangingPassword(false)}
-            />
-          )}
-        </div>
-      )}
+      <section className="profile-content">
+        {/* PROFILE TAB */}
+        {tab === "profile" && (
+          <div className="profile-grid">
+            <div className="profile-column">
+              {editingProfile ? (
+                <ProfileEditForm
+                  user={user}
+                  onSave={handleProfileSave}
+                  onCancel={() => setEditingProfile(false)}
+                />
+              ) : (
+                <ProfileDetailsCard
+                  user={user}
+                  onEdit={() => setEditingProfile(true)}
+                />
+              )}
+              {profileMessage && (
+                <div className="form-success">{profileMessage}</div>
+              )}
+            </div>
+            {changingPassword && (
+              <ChangePasswordForm
+                user={user}
+                onDone={() => setChangingPassword(false)}
+              />
+            )}
+          </div>
+        )}
 
       {/* PREFERENCES TAB */}
       {tab === "preferences" && (
@@ -247,6 +246,7 @@ export default function ProfilePage() {
           <SavedListingsPage mode="saved" />
         </div>
       )}
-    </div>
+    </section>
+  </div>
   );
 }

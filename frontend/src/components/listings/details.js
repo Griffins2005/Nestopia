@@ -1,21 +1,20 @@
 // src/components/listings/details.js
 import React, { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
 import SavedButton from "./savedbutton";
 import ShareButton from "./share";
 import { FiArrowLeft, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { FaCheckCircle, FaStar, FaMapMarkerAlt } from "react-icons/fa";
+import { FaCheckCircle, FaStar, FaMapMarkerAlt, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
 import avatar from "../../images/avatar.png";
 
 export default function ListingDetail() {
   const { user } = useContext(AuthContext);
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [listing, setListing] = useState(null);
   const [imgIdx, setImgIdx] = useState(0);
-  const [startingChat, setStartingChat] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     fetch(`/api/listings/${id}`)
@@ -36,14 +35,15 @@ export default function ListingDetail() {
   const handleThumb = (i) => setImgIdx(i);
 
   const landlord = listing.landlord || {};
-  const landlordId = landlord.id;
   const calendly = landlord.calendly_link || "";
   const availableFrom = listing.available_from
     ? new Date(listing.available_from).toLocaleDateString()
     : "-";
   const matchScore = Math.round((listing.match_score || 0) * 100);
   const landlordName = landlord.name || "Host";
-  const landlordEmail = landlord.email || "N/A";
+  const landlordEmail = (landlord.email || "").trim();
+  const landlordPhoneRaw = landlord.phone || "";
+  const landlordPhone = landlordPhoneRaw ? landlordPhoneRaw.trim() : "";
   const landlordAvatar = landlord.profilePicture || avatar;
   const landlordSince = landlord.created_at
     ? new Date(landlord.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long" })
@@ -51,58 +51,20 @@ export default function ListingDetail() {
   const verified = landlord.verified || false;
   const responseRate = landlord.response_rate || "N/A";
   const responseTime = landlord.response_time || "N/A";
-
-  const handleMessageOwner = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    if (!user.id || !landlordId || !listing.id) {
-      setErrorMsg("Something went wrong. Missing user or landlord info.");
-      return;
-    }
-    setStartingChat(true);
-    setErrorMsg("");
-    try {
-      // Build payload: only include fields required by backend
-      const payload = {
-        listing_id: listing.id,
-        renter_id: user.role === "renter" ? user.id : undefined,
-        landlord_id: landlordId,
-      };
-      // Remove undefined fields so FastAPI doesn't receive them as null
-      Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
-
-      const res = await fetch("/api/chats/conversations/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        if (Array.isArray(result)) {
-          setErrorMsg(result.map((e) => e.msg).join("; "));
-        } else if (result.detail) {
-          setErrorMsg(result.detail);
-        } else {
-          setErrorMsg("Failed to start chat.");
-        }
-        setStartingChat(false);
-        return;
-      }
-      // You can redirect to `/chat/${result.id}` if you want a 1:1 chat page per conversation
-      navigate("/chat");
-    } catch (e) {
-      setErrorMsg("Network error, please try again.");
-      setStartingChat(false);
-    }
-  };
-
-  const showMessageOwnerBtn = user && user.role === "renter";
+  const landlordFirstName = landlordName.split(" ")[0] || landlordName;
+  const emailSubject = encodeURIComponent(`Inquiry about ${listing.title || "your listing on Nestopia"}`);
+  const renterDescriptor = (user?.name || user?.email || "a Nestopia renter").trim();
+  const emailBody = encodeURIComponent(
+    `Hi ${landlordFirstName || "there"},\n\nI'm ${renterDescriptor} and I just reviewed your listing on Nestopia. ` +
+    `I'd love to learn more about availability, tour times, and next steps.\n\nThanks!\n${renterDescriptor}`
+  );
+  const emailHref = landlordEmail
+    ? `mailto:${landlordEmail}?subject=${emailSubject}&body=${emailBody}`
+    : null;
+  const phoneHref = landlordPhone
+    ? `tel:${landlordPhone.replace(/[^+\\d]/g, "")}`
+    : null;
+  const hasContactDetails = Boolean(emailHref || phoneHref);
 
   return (
     <div className="listing-detail-wrapper">
@@ -230,41 +192,68 @@ export default function ListingDetail() {
           <span className="detail-price-unit">/month</span>
         </div>
         <div className="detail-match-badge">{matchScore}% Match</div>
-        <div className="token-progress">
-          <div className="token-progress-label">Token Progress</div>
-          <div className="token-progress-bar-bg">
-            <div className="token-progress-bar" style={{ width: `${Math.max(10, matchScore)}%` }} />
+        <div className="detail-contact-block">
+          <h3>Contact {landlordName}</h3>
+          <p className="contact-note">
+            {user
+              ? "Hosts see your verified profile when you reach out. Tap a button below to reveal the secure email or phone channel."
+              : "Create a free profile so hosts see your preferences before you email or call."}
+          </p>
+          <div className="contact-button-group">
+            {emailHref && (
+              <button
+                className="primary-btn contact-btn"
+                onClick={() => {
+                  if (!user) {
+                    navigate("/login", {
+                      state: {
+                        from: { pathname: location.pathname },
+                        message: "Please sign in or create an account to contact landlords.",
+                      },
+                    });
+                    return;
+                  }
+                  window.location.href = emailHref;
+                }}
+              >
+                <FaEnvelope /> Email {landlordFirstName}
+              </button>
+            )}
+            {phoneHref && (
+              <button
+                className="secondary-btn contact-btn"
+                onClick={() => {
+                  if (!user) {
+                    navigate("/login", {
+                      state: {
+                        from: { pathname: location.pathname },
+                        message: "Please sign in or create an account to contact landlords.",
+                      },
+                    });
+                    return;
+                  }
+                  window.location.href = phoneHref;
+                }}
+              >
+                <FaPhoneAlt /> Call or text {landlordFirstName}
+              </button>
+            )}
           </div>
-          <span className="token-progress-msg">Unlock property visit at 100%!</span>
-        </div>
-        <div className="detail-side-btns">
-          {showMessageOwnerBtn && (
-            <button
-              className="primary-btn"
-              onClick={handleMessageOwner}
-              disabled={startingChat}
-            >
-              {startingChat ? "Starting chat..." : "Message Owner"}
-            </button>
-          )}
-          <button
-            className="secondary-btn"
-            disabled={!calendly}
-            onClick={() => calendly && window.open(calendly, "_blank")}
-          >
-            Schedule Tour
-          </button>
-          {!calendly && (
-            <div className="no-calendly-msg">
-              The landlord has not provided a tour scheduling link.<br />
-              Please message the owner for more info.
+          {!hasContactDetails && (
+            <div className="contact-hint">
+              This host hasn’t shared contact details yet. Save the listing to get notified when they update their profile.
             </div>
           )}
-          {errorMsg && (
-            <div className="listing-error-msg">
-              {Array.isArray(errorMsg)
-                ? errorMsg.map((m, i) => <div key={i}>{m}</div>)
-                : errorMsg}
+          {calendly ? (
+            <button
+              className="secondary-btn contact-btn full-width"
+              onClick={() => window.open(calendly, "_blank")}
+            >
+              Schedule a tour
+            </button>
+          ) : (
+            <div className="no-calendly-msg">
+              The landlord has not provided a tour scheduling link. Use the email/phone buttons once available to arrange a visit.
             </div>
           )}
         </div>
@@ -276,7 +265,11 @@ export default function ListingDetail() {
           />
           <div className="landlord-info">
             <div className="landlord-name">{landlordName}</div>
-            <div className="landlord-email">{landlordEmail}</div>
+            <div className="landlord-contact-note">
+              {hasContactDetails
+                ? "Contact details are shared securely when you tap Email or Call."
+                : "Contact details pending — we’ll alert you when the host adds them."}
+            </div>
             <div className="landlord-since">Member since {landlordSince}</div>
             {verified && (
               <span className="landlord-verified">

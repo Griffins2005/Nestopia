@@ -20,6 +20,16 @@ const amenitiesOptions = [
   "Close to parks", "Quiet neighborhood", "Safe neighborhood", "Family-friendly",
   "Professional community", "Student-friendly"
 ];
+const buildingAmenitiesOptions = [
+  "Gym", "Pool", "Security system", "Elevator", "Package receiving",
+  "Maintenance included", "Bike storage", "Business center", "Community room",
+  "Outdoor space", "Rooftop deck", "BBQ area", "Pet wash station",
+  "Electric car charging", "Smart access control", "High-speed internet infrastructure",
+  "Trash chute", "Recycling systems", "On-site maintenance", "On-site manager"
+];
+const smokingOptions = ["No smoking", "Prefer non-smoking", "No preference", "Smoking friendly"];
+const noiseOptions = ["Very quiet", "Moderate", "No preference"];
+const visitorOptions = ["Strict hours", "Flexible", "No preference"];
 const tenantRequirements = [
   "No smoking", "No pets", "No subletting", "Credit check required", "Background check required",
   "References required", "Rental history required", "Employment verification",
@@ -38,22 +48,31 @@ export default function PreferencesForm({ userType, onComplete }) {
     budget_max: 3500,
     bedrooms: 2,
     bathrooms: 1,
+    household_size: 1,
     locations: [],
     move_in_date: "Next month",
     lease_length: 12,
     amenities: [],
+    building_amenities: [],
     pets_allowed: false,
+    smoking_preference: "No preference",
+    noise_tolerance: "No preference",
+    visitor_flexibility: "No preference",
+    custom_preferences: [],
   });
 
   const [landlordPrefs, setLandlordPrefs] = useState({
     tenant_preferences: [],
     lease_length: 12,
     pets_allowed: true,
+    custom_requirements: [],
   });
 
   // For input chips
   const [newAmenity, setNewAmenity] = useState("");
+  const [newCustomPref, setNewCustomPref] = useState("");
   const [newTenantPref, setNewTenantPref] = useState("");
+  const [newCustomRequirement, setNewCustomRequirement] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -93,6 +112,14 @@ export default function PreferencesForm({ userType, onComplete }) {
         : [...prev.amenities, amenity]
     }));
   };
+  const handleBuildingAmenityToggle = (amenity) => {
+    setRenterPrefs((prev) => ({
+      ...prev,
+      building_amenities: prev.building_amenities.includes(amenity)
+        ? prev.building_amenities.filter((a) => a !== amenity)
+        : [...prev.building_amenities, amenity]
+    }));
+  };
   const addAmenity = () => {
     if (newAmenity && !renterPrefs.amenities.includes(newAmenity)) {
       setRenterPrefs((prev) => ({
@@ -106,6 +133,22 @@ export default function PreferencesForm({ userType, onComplete }) {
     setRenterPrefs((prev) => ({
       ...prev,
       amenities: prev.amenities.filter((a) => a !== amenity)
+    }));
+  };
+  const addCustomPreference = () => {
+    if (newCustomPref && !renterPrefs.custom_preferences.includes(newCustomPref)) {
+      setRenterPrefs(prev => ({
+        ...prev,
+        custom_preferences: [...prev.custom_preferences, newCustomPref]
+      }));
+      setNewCustomPref("");
+    }
+  };
+
+  const removeCustomPreference = (pref) => {
+    setRenterPrefs(prev => ({
+      ...prev,
+      custom_preferences: prev.custom_preferences.filter((p) => p !== pref)
     }));
   };
 
@@ -126,6 +169,25 @@ export default function PreferencesForm({ userType, onComplete }) {
     setLandlordPrefs((prev) => ({
       ...prev,
       tenant_preferences: prev.tenant_preferences.filter((p) => p !== pref)
+    }));
+  };
+  const addCustomRequirement = () => {
+    if (
+      newCustomRequirement &&
+      !landlordPrefs.custom_requirements.includes(newCustomRequirement)
+    ) {
+      setLandlordPrefs(prev => ({
+        ...prev,
+        custom_requirements: [...prev.custom_requirements, newCustomRequirement]
+      }));
+      setNewCustomRequirement("");
+    }
+  };
+
+  const removeCustomRequirement = (req) => {
+    setLandlordPrefs(prev => ({
+      ...prev,
+      custom_requirements: prev.custom_requirements.filter((r) => r !== req)
     }));
   };
 
@@ -271,6 +333,20 @@ export default function PreferencesForm({ userType, onComplete }) {
                 })
               }
             />
+            <label className="preferences-label">How many people will live with you?</label>
+            <input
+              className="preferences-input"
+              type="number"
+              min="1"
+              max="6"
+              value={renterPrefs.household_size}
+              onChange={(e) =>
+                setRenterPrefs({
+                  ...renterPrefs,
+                  household_size: parseInt(e.target.value || "1", 10)
+                })
+              }
+            />
           </div>
         );
       case 3:
@@ -322,6 +398,23 @@ export default function PreferencesForm({ userType, onComplete }) {
                   )
               )}
             </div>
+            <h3 className="preferences-title" style={{ marginTop: "1.5em" }}>Building Amenities</h3>
+            <div className="preference-badges">
+              {buildingAmenitiesOptions.map((amenity) => (
+                <button
+                  key={amenity}
+                  type="button"
+                  onClick={() => handleBuildingAmenityToggle(amenity)}
+                  className={
+                    renterPrefs.building_amenities.includes(amenity)
+                      ? "preference-badge selected"
+                      : "preference-badge"
+                  }
+                >
+                  {renterPrefs.building_amenities.includes(amenity) ? amenity : `+ ${amenity}`}
+                </button>
+              ))}
+            </div>
             <label className="preferences-label">Pets Allowed?</label>
             <select
               className="preferences-select"
@@ -331,6 +424,36 @@ export default function PreferencesForm({ userType, onComplete }) {
               <option value="Yes">Yes</option>
               <option value="No">No</option>
             </select>
+            <label className="preferences-label">Smoking Preference</label>
+            <select
+              className="preferences-select"
+              value={renterPrefs.smoking_preference}
+              onChange={e => setRenterPrefs({ ...renterPrefs, smoking_preference: e.target.value })}
+            >
+              {smokingOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <label className="preferences-label">Noise Tolerance</label>
+            <select
+              className="preferences-select"
+              value={renterPrefs.noise_tolerance}
+              onChange={e => setRenterPrefs({ ...renterPrefs, noise_tolerance: e.target.value })}
+            >
+              {noiseOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <label className="preferences-label">Visitor / Guest Flexibility</label>
+            <select
+              className="preferences-select"
+              value={renterPrefs.visitor_flexibility}
+              onChange={e => setRenterPrefs({ ...renterPrefs, visitor_flexibility: e.target.value })}
+            >
+              {visitorOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
             <label className="preferences-label">Preferred Lease Length (months)</label>
             <input
               className="preferences-input"
@@ -338,6 +461,34 @@ export default function PreferencesForm({ userType, onComplete }) {
               value={renterPrefs.lease_length}
               onChange={e => setRenterPrefs({ ...renterPrefs, lease_length: parseInt(e.target.value) })}
             />
+            <h3 className="preferences-title" style={{ marginTop: "1.5em" }}>Custom Preferences</h3>
+            <div className="preference-chips">
+              {renterPrefs.custom_preferences.map((pref) => (
+                <span className="preference-chip selected" key={pref}>
+                  {pref}
+                  <button
+                    className="remove-btn"
+                    type="button"
+                    onClick={() => removeCustomPreference(pref)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              className="preferences-input"
+              value={newCustomPref}
+              onChange={(e) => setNewCustomPref(e.target.value)}
+              placeholder='Add tags like "close to Cornell"'
+            />
+            <button
+              type="button"
+              className="preferences-btn-outline"
+              onClick={addCustomPreference}
+            >
+              Add Tag
+            </button>
           </div>
         );
       default:
@@ -415,6 +566,34 @@ export default function PreferencesForm({ userType, onComplete }) {
           <option value="Yes">Yes</option>
           <option value="No">No</option>
         </select>
+        <h3 className="preferences-title" style={{ marginTop: "1.5em" }}>Custom Requirements</h3>
+        <div className="preference-chips">
+          {landlordPrefs.custom_requirements.map((req) => (
+            <span className="preference-chip selected" key={req}>
+              {req}
+              <button
+                className="remove-btn"
+                type="button"
+                onClick={() => removeCustomRequirement(req)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          className="preferences-input"
+          value={newCustomRequirement}
+          onChange={(e) => setNewCustomRequirement(e.target.value)}
+          placeholder="Add custom rule (e.g., quiet tenants)"
+        />
+        <button
+          type="button"
+          className="preferences-btn-outline"
+          onClick={addCustomRequirement}
+        >
+          Add Rule
+        </button>
       </div>
     );
   }
