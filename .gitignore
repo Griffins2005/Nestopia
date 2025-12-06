@@ -1,2 +1,6 @@
 # Ignore Mac system files
 .DS_Store
+
+# Keep AI matching files local only
+AI_MATCHING_SUMMARY.md
+AI_MATCHING_IMPROVEMENTS.md
