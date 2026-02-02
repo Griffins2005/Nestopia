@@ -1,0 +1,15 @@
+{
+  "short_name": "Nestopia",
+  "name": "Nestopia",
+  "icons": [
+    {
+      "src": "nestopia-logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2e74a8",
+  "background_color": "#ffffff"
+}
