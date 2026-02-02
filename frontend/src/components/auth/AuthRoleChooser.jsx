@@ -1,4 +1,3 @@
-//src/components/auth/AuthRoleChooser.js
 import React from "react";
 
 export default function AuthRoleChooser({ role, setRole, disabled }) {

@@ -17,14 +17,34 @@ depends_on = None
 
 
 def upgrade():
-    # Add auth_method column as nullable, default "email"
-    op.add_column('users', sa.Column('auth_method', sa.String(length=16), nullable=True, server_default='email'))
-    op.execute("UPDATE users SET auth_method = 'email' WHERE auth_method IS NULL;")
-    op.alter_column('users', 'auth_method', nullable=False)
-    # Make password_hash nullable if you want:
-    op.alter_column('users', 'password_hash', nullable=True)
-    # ...any unique constraints, etc...
-    op.create_unique_constraint('unique_email_role', 'users', ['email', 'role'])
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    dialect = bind.dialect.name
+
+    def table_exists(name: str) -> bool:
+        return name in inspector.get_table_names()
+
+    def has_column(table: str, column: str) -> bool:
+        if not table_exists(table):
+            return False
+        return column in {col["name"] for col in inspector.get_columns(table)}
+
+    def has_unique_constraint(table: str, name: str) -> bool:
+        if not table_exists(table):
+            return False
+        return any(c.get("name") == name for c in inspector.get_unique_constraints(table))
+
+    if table_exists('users'):
+        # Add auth_method column as nullable, default "email"
+        if not has_column('users', 'auth_method'):
+            op.add_column('users', sa.Column('auth_method', sa.String(length=16), nullable=True, server_default='email'))
+        op.execute("UPDATE users SET auth_method = 'email' WHERE auth_method IS NULL;")
+        if dialect != "sqlite":
+            op.alter_column('users', 'auth_method', nullable=False)
+            # Make password_hash nullable if you want:
+            op.alter_column('users', 'password_hash', nullable=True)
+        if not has_unique_constraint('users', 'unique_email_role'):
+            op.create_unique_constraint('unique_email_role', 'users', ['email', 'role'])
 
     # ### end Alembic commands ###
 

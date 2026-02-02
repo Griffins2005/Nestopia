@@ -1,4 +1,3 @@
-//src/components/profile/edit.js 
 import React, { useState, useRef, useContext, useEffect } from "react";
 import axios from "axios";
 import avatar from "../../images/avatar.png";
@@ -23,7 +22,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
     user.profilePicture
       ? (user.profilePicture.startsWith("http")
         ? user.profilePicture
-        : `${process.env.REACT_APP_API_URL || "http://localhost:8000"}${user.profilePicture}`)
+        : `${import.meta.env.REACT_APP_API_URL || "http://localhost:8000"}${user.profilePicture}`)
       : avatar
   );
   const [error, setError] = useState("");
@@ -40,7 +39,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
   const [detectingLocation, setDetectingLocation] = useState(false);
 
   useEffect(() => {
-    if (!location || !process.env.REACT_APP_GOOGLE_MAPS_API_KEY) {
+    if (!location || !import.meta.env.REACT_APP_GOOGLE_MAPS_API_KEY) {
       setLocationSuggestions([]);
       return;
     }
@@ -50,7 +49,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
         const res = await fetch(
           `${GOOGLE_PLACE_ENDPOINT}?input=${encodeURIComponent(
             location
-          )}&types=(cities)&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+          )}&types=(cities)&key=${import.meta.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
         );
         const data = await res.json();
         if (data?.predictions) {

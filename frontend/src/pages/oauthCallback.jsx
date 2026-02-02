@@ -1,4 +1,3 @@
-//src/pages/oauthCallback.js
 import React, { useEffect, useContext } from "react";
 import { useSearchParams } from "react-router-dom";
 import AuthContext from "../context/authContext";

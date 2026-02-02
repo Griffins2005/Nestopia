@@ -1,4 +1,3 @@
-// src/components/listings/create.js
 import React, { useContext, useState, useRef, useEffect } from "react";
 import AuthContext from "../../context/authContext";
 import { useNavigate } from "react-router-dom";

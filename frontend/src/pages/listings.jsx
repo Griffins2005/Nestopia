@@ -1,4 +1,3 @@
-// src/pages/listings.js
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import axios from "axios";
 import { FiSearch } from "react-icons/fi";
@@ -21,10 +20,10 @@ export default function ListingsPage() {
   useEffect(() => {
     setLoading(true);
     const params = viewAsRenter ? { view_as_renter: true } : {};
-    const headers = user?.accessToken 
+    const headers = user?.accessToken
       ? { Authorization: `Bearer ${user.accessToken}` }
       : {};
-    
+
     axios
       .get("/api/listings/", {
         headers,
@@ -75,9 +74,7 @@ export default function ListingsPage() {
         <div className="listings-hero-text">
           <p className="eyebrow">Curated for you</p>
           <h1>
-            {isLandlord && !viewAsRenter
-              ? "My Listings"
-              : "Available Listings"}
+            {isLandlord && !viewAsRenter ? "My Listings" : "Available Listings"}
           </h1>
           <p>
             {isLandlord && !viewAsRenter

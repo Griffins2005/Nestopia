@@ -1,4 +1,3 @@
-// src/components/Listings/ListingCard.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import SavedButton from "./savedbutton";

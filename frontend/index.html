@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <!-- Brand Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/nestopia-logo.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="%PUBLIC_URL%/nestopia-logo.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="%PUBLIC_URL%/nestopia-logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/nestopia-logo.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/nestopia-logo.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/nestopia-logo.png" />
 
     <!-- Manifest and theme color -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#2e74a8" />
 
     <!-- Mobile standalone app support -->
@@ -18,13 +18,15 @@
 
     <!-- Responsive -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#2e74a8" />
-    <meta name="description" content="Nestopia - Effortless rental matching for renters and landlords. Find your next home or tenant with AI-powered search." />
+    <meta
+      name="description"
+      content="Nestopia - Effortless rental matching for renters and landlords. Find your next home or tenant with AI-powered search."
+    />
 
     <!-- Open Graph (Facebook/LinkedIn) -->
     <meta property="og:title" content="Nestopia | Smart Rental Matching" />
     <meta property="og:description" content="Effortless rental matching for renters and landlords." />
-    <meta property="og:image" content="%PUBLIC_URL%/nestopia-logo.png" />
+    <meta property="og:image" content="/nestopia-logo.png" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://your-domain.com" />
 
@@ -32,23 +34,13 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Nestopia | Smart Rental Matching" />
     <meta name="twitter:description" content="Effortless rental matching for renters and landlords." />
-    <meta name="twitter:image" content="%PUBLIC_URL%/nestopia-logo.png" />
-
-    <!-- iOS Mobile App Capable -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Nestopia" />
+    <meta name="twitter:image" content="/nestopia-logo.png" />
 
     <title>Nestopia | Effortless Rental Matching</title>
-
-    <!-- If using webfonts (uncomment if you add fonts) -->
-    <!--
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    -->
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>

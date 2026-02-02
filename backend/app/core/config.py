@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     FRONTEND_URL: str = "http://localhost:3000"
+    AUTO_CREATE_TABLES: bool = False
     USE_ML_MATCHING: bool = True
     USE_SEMANTIC_MATCHING: bool = False
 

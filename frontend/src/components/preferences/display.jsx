@@ -1,4 +1,3 @@
-// src/components/preferences/display.js
 import React from "react";
 
 function ListChips({ items }) {

@@ -17,19 +17,43 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("renter_preferences", sa.Column("household_size", sa.Integer(), nullable=False, server_default="1"))
-    op.add_column("renter_preferences", sa.Column("building_amenities", sa.JSON(), nullable=True))
-    op.add_column("renter_preferences", sa.Column("smoking_preference", sa.String(length=32), nullable=True))
-    op.add_column("renter_preferences", sa.Column("noise_tolerance", sa.String(length=32), nullable=True))
-    op.add_column("renter_preferences", sa.Column("visitor_flexibility", sa.String(length=32), nullable=True))
-    op.add_column("renter_preferences", sa.Column("custom_preferences", sa.JSON(), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    dialect = bind.dialect.name
 
-    op.add_column("landlord_preferences", sa.Column("custom_requirements", sa.JSON(), nullable=True))
+    def table_exists(name: str) -> bool:
+        return name in inspector.get_table_names()
 
-    op.add_column("listings", sa.Column("neighborhood_profile", sa.JSON(), nullable=True))
-    op.add_column("listings", sa.Column("custom_tags", sa.JSON(), nullable=True))
+    def has_column(table: str, column: str) -> bool:
+        if not table_exists(table):
+            return False
+        return column in {col["name"] for col in inspector.get_columns(table)}
 
-    op.alter_column("renter_preferences", "household_size", server_default=None)
+    if table_exists("renter_preferences"):
+        if not has_column("renter_preferences", "household_size"):
+            op.add_column("renter_preferences", sa.Column("household_size", sa.Integer(), nullable=False, server_default="1"))
+        if not has_column("renter_preferences", "building_amenities"):
+            op.add_column("renter_preferences", sa.Column("building_amenities", sa.JSON(), nullable=True))
+        if not has_column("renter_preferences", "smoking_preference"):
+            op.add_column("renter_preferences", sa.Column("smoking_preference", sa.String(length=32), nullable=True))
+        if not has_column("renter_preferences", "noise_tolerance"):
+            op.add_column("renter_preferences", sa.Column("noise_tolerance", sa.String(length=32), nullable=True))
+        if not has_column("renter_preferences", "visitor_flexibility"):
+            op.add_column("renter_preferences", sa.Column("visitor_flexibility", sa.String(length=32), nullable=True))
+        if not has_column("renter_preferences", "custom_preferences"):
+            op.add_column("renter_preferences", sa.Column("custom_preferences", sa.JSON(), nullable=True))
+
+    if table_exists("landlord_preferences") and not has_column("landlord_preferences", "custom_requirements"):
+        op.add_column("landlord_preferences", sa.Column("custom_requirements", sa.JSON(), nullable=True))
+
+    if table_exists("listings"):
+        if not has_column("listings", "neighborhood_profile"):
+            op.add_column("listings", sa.Column("neighborhood_profile", sa.JSON(), nullable=True))
+        if not has_column("listings", "custom_tags"):
+            op.add_column("listings", sa.Column("custom_tags", sa.JSON(), nullable=True))
+
+    if dialect != "sqlite" and table_exists("renter_preferences") and has_column("renter_preferences", "household_size"):
+        op.alter_column("renter_preferences", "household_size", server_default=None)
 
 
 def downgrade():

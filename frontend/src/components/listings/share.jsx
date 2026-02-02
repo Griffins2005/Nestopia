@@ -1,4 +1,3 @@
-//src/components/listings/share.js 
 import React, { useState, useRef } from "react";
 import { FiUpload, FiX } from "react-icons/fi"; // ← Add cancel icon
 
@@ -64,4 +63,3 @@ export default function ShareButton({ listingId }) {
     </span>
   );
 }
-

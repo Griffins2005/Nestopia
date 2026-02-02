@@ -1,70 +1,61 @@
-# Getting Started with Create React App
+# Nestopia Frontend (Vite)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This frontend is built with React and Vite. Vite provides a faster dev server and a leaner production build pipeline than the legacy Create React App toolchain.
 
-## Available Scripts
+## Directory Layout
 
-In the project directory, you can run:
+```
+frontend/
+├── public/                 # Static assets served as-is
+├── src/
+│   ├── api/                # Axios instances and API helpers
+│   ├── components/         # Reusable UI components by domain
+│   ├── context/            # React context providers
+│   ├── images/             # Image assets used by components
+│   ├── pages/              # Route-level pages
+│   ├── App.jsx             # Route wiring and layout
+│   ├── index.css           # Global styles
+│   └── index.jsx           # App entrypoint
+├── index.html              # Vite HTML entry
+├── package.json
+└── vite.config.js
+```
+
+## Scripts
+
+In the `frontend/` directory:
 
 ### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Starts the Vite dev server at `http://localhost:3000`.
 
 ### `npm run build`
+Creates a production build in `dist/`.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### `npm run preview`
+Serves the production build locally for verification.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Environment Variables
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The app reads variables prefixed with `REACT_APP_` (configured in `vite.config.js`), for example:
 
-### `npm run eject`
+```
+REACT_APP_API_BASE_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_GOOGLE_MAPS_API_KEY=your_key
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Notes:
+- If `REACT_APP_GOOGLE_MAPS_API_KEY` is not set, location autocomplete is disabled and the profile form falls back to manual entry.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Component Domains
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Key component groups under `src/components/`:
+- `auth/`: login, signup, role chooser, Google OAuth button
+- `listings/`: listing create/edit/details, saved listings, share
+- `matches/`: daily matches list and preference matcher
+- `preferences/`: preference forms and display
+- `profile/`: profile details, edit, password change
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Build Output
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+`npm run build` outputs production assets to `dist/`.

@@ -1,10 +1,11 @@
-//src/context/authContext.js
-// src/context/authContext.js
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
+axios.defaults.baseURL = API_BASE_URL;
 
 const extractDetail = (error) => {
   const detail = error?.response?.data?.detail;
