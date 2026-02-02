@@ -1,3 +1,4 @@
+//src/pages/home.js
 import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiSearch, FiArrowRight } from "react-icons/fi";

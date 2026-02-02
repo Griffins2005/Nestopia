@@ -1,3 +1,4 @@
+// src/components/profile/details.js 
 import React from "react";
 import avatar from "../../images/avatar.png";
 import { FiEdit2, FiMapPin, FiMail, FiPhone, FiLock } from "react-icons/fi";
@@ -12,7 +13,7 @@ function formatMemberSince(dateString) {
   if (!dateString) return "N/A";
   try {
     const date = new Date(dateString);
-    return date.toLocaleString("default", { month: "long", year: "numeric" });
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
   } catch {
     return "N/A";
   }
@@ -30,7 +31,7 @@ export default function ProfileDetailsCard({ user, onEdit, onChangePassword }) {
     user.profilePicture && !user.profilePicture.includes("avatar.png")
       ? (user.profilePicture.startsWith("http")
           ? user.profilePicture
-          : `${import.meta.env.REACT_APP_API_URL || "http://localhost:8000"}${user.profilePicture}`)
+          : `${process.env.REACT_APP_API_URL || "http://localhost:8000"}${user.profilePicture}`)
       : avatar;
 
   return (

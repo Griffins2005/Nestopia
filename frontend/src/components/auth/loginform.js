@@ -1,3 +1,4 @@
+// src/components/auth/loginform.js
 import React, { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -7,8 +8,7 @@ import GoogleButton from "./googleButton";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const authClient = axios.create({
-  baseURL:
-    import.meta.env.REACT_APP_API_BASE_URL || "http://localhost:8000",
+  baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:8000",
   headers: { "Content-Type": "application/json" },
 });
 

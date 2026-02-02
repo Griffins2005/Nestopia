@@ -323,7 +323,7 @@ def compute_user_behavior_features(db, user_id: int, listing_id: int) -> Dict:
     Extract behavioral features for a user-listing pair.
     Called from matching service to gather interaction data.
     """
-    from app.db.models import SavedListing, VisitRequest, Listing
+    from app.db.models import SavedListing, VisitRequest
     
     features = {
         'saved_similarity': 0.0,
@@ -347,63 +347,8 @@ def compute_user_behavior_features(db, user_id: int, listing_id: int) -> Dict:
     if visit:
         features['visit_similarity'] = 1.0
     
-    # Compute similarity to other saved listings (lightweight heuristic)
-    saved_entries = db.query(SavedListing).filter(
-        SavedListing.user_id == user_id
-    ).all()
-
-    if saved_entries:
-        saved_ids = [entry.listing_id for entry in saved_entries]
-        saved_listings = db.query(Listing).filter(Listing.id.in_(saved_ids)).all()
-
-        target_listing = db.query(Listing).filter(Listing.id == listing_id).first()
-        if target_listing and saved_listings:
-            def similarity(a: Listing, b: Listing) -> float:
-                score = 0.0
-                total = 0.0
-
-                # Price similarity (bounded)
-                if a.rent_price and b.rent_price:
-                    diff = abs(a.rent_price - b.rent_price)
-                    denom = max(a.rent_price, b.rent_price, 1)
-                    score += max(0.0, 1.0 - (diff / denom))
-                    total += 1.0
-
-                # Bedrooms/Bathrooms similarity
-                if a.bedrooms is not None and b.bedrooms is not None:
-                    diff = abs(a.bedrooms - b.bedrooms)
-                    score += max(0.0, 1.0 - (diff / max(1, a.bedrooms, b.bedrooms)))
-                    total += 1.0
-                if a.bathrooms is not None and b.bathrooms is not None:
-                    diff = abs(a.bathrooms - b.bathrooms)
-                    score += max(0.0, 1.0 - (diff / max(1, a.bathrooms, b.bathrooms)))
-                    total += 1.0
-
-                # Location similarity (simple text overlap)
-                if a.location and b.location:
-                    a_loc = a.location.lower()
-                    b_loc = b.location.lower()
-                    score += 1.0 if a_loc in b_loc or b_loc in a_loc else 0.4
-                    total += 1.0
-
-                # Amenity overlap
-                a_am = set(a.amenities or [])
-                b_am = set(b.amenities or [])
-                if a_am and b_am:
-                    score += len(a_am & b_am) / max(1, len(a_am | b_am))
-                    total += 1.0
-
-                # Pets policy alignment
-                if a.pets_allowed is not None and b.pets_allowed is not None:
-                    score += 1.0 if a.pets_allowed == b.pets_allowed else 0.2
-                    total += 1.0
-
-                if total == 0:
-                    return 0.0
-                return max(0.0, min(1.0, score / total))
-
-            similarities = [similarity(target_listing, saved) for saved in saved_listings]
-            features["saved_similarity"] = max(similarities) if similarities else 0.0
+    # TODO: Compute similarity to other saved listings
+    # This would require comparing listing features
     
     return features
 
@@ -453,3 +398,4 @@ def find_similar_users(db, renter_prefs, limit: int = 10) -> List[Dict]:
     # Sort by similarity and return top N
     similar_users.sort(key=lambda x: x['similarity'], reverse=True)
     return similar_users[:limit]
+

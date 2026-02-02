@@ -1,5 +1,6 @@
 # app/routers/matches.py
 from fastapi import APIRouter, Depends
+from app.db.session import get_db
 from app.dependencies import get_current_user, get_db
 from app.crud.match import get_ranked_matches
 

@@ -1,5 +1,6 @@
 #app/main.py
 from fastapi import FastAPI
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
@@ -42,11 +43,10 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
 
-# Automatically create database tables on startup (dev only)
+# Automatically create database tables on startup (for dev)
 @app.on_event("startup")
 def on_startup():
-    if settings.AUTO_CREATE_TABLES:
-        Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 # Routers
 app.include_router(auth.router)

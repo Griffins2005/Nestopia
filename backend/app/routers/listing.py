@@ -1,13 +1,13 @@
 #app/routers/listing.py
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import os
 from uuid import uuid4
 from app.schemas.listing import ( ListingCreate, ListingResponse,ListingUpdate,SavedListingResponse, SavedListingWithDetails )
 from app.crud.listings import (create_listing, get_all_listings, get_listing, get_listings_by_landlord, update_listing,
-    delete_listing, get_saved_listings_by_user_full, save_listing, remove_saved_listing )
+    delete_listing, get_saved_listings_by_user,  get_saved_listings_by_user_full, save_listing, remove_saved_listing )
 from app.dependencies import get_db, get_current_user, get_optional_user
 from app.crud.preferences import get_renter_preferences, get_landlord_preferences
 from app.utils.match import compute_compatibility_score
@@ -26,12 +26,7 @@ def create_listing_endpoint(
     return new_listing
 
 @router.post("/upload-image")
-def upload_image(
-    file: UploadFile = File(...),
-    current_user=Depends(get_current_user),
-):
-    if current_user.role != "landlord":
-        raise HTTPException(status_code=403, detail="Not a landlord")
+def upload_image(file: UploadFile = File(...)):
     UPLOAD_DIR = "uploads/listing_images"
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     ext = os.path.splitext(file.filename)[1]
@@ -120,6 +115,31 @@ def read_listing(listing_id: int, db: Session = Depends(get_db)):
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
     return listing
+
+@router.put("/{listing_id}", response_model=ListingResponse)
+def update_listing_endpoint(
+    listing_id: int,
+    request: ListingUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = get_listing(db, listing_id)
+    if not listing or listing.landlord_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
+    updated = update_listing(db, listing_id, request.dict(exclude_unset=True))
+    return updated
+
+@router.delete("/{listing_id}", response_model=ListingResponse)
+def delete_listing_endpoint(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = get_listing(db, listing_id)
+    if not listing or listing.landlord_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
+    deleted = delete_listing(db, listing_id)
+    return deleted
 
 @router.get("/saved/", response_model=List[SavedListingWithDetails])
 def list_saved_listings(

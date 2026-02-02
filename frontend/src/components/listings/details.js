@@ -1,3 +1,4 @@
+// src/components/listings/details.js
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
@@ -61,7 +62,7 @@ export default function ListingDetail() {
     ? `mailto:${landlordEmail}?subject=${emailSubject}&body=${emailBody}`
     : null;
   const phoneHref = landlordPhone
-    ? `tel:${landlordPhone.replace(/[^+\d]/g, "")}`
+    ? `tel:${landlordPhone.replace(/[^+\\d]/g, "")}`
     : null;
   const hasContactDetails = Boolean(emailHref || phoneHref);
 
