@@ -29,17 +29,30 @@ const parseDetail = (error) => {
   return { code: detail.code, message: detail.message };
 };
 
+const LOGIN_ERROR_MESSAGES = {
+  email_only:
+    "This account uses email and password. Please log in with your email credentials.",
+  google_failed: "We couldn’t finish Google sign-in. Please try again.",
+  google_cancelled:
+    "Google sign-in was canceled. You can try again or use email and password.",
+  google_no_email:
+    "Google did not share an email address. Try another Google account or use email and password.",
+};
+
 export default function LoginForm() {
   const { login } = useContext(AuthContext);
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const sessionExpired = params.get("expired") === "1";
+  const queryError = params.get("message") || LOGIN_ERROR_MESSAGES[params.get("error")] || "";
+  const initialRole = params.get("role") || location.state?.role || "renter";
 
-  const [role, setRole] = useState(location.state?.role || "renter");
+  const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(location.state?.error || location.state?.message || "");
+  const [error, setError] = useState(queryError || location.state?.error || location.state?.message || "");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState(location.state?.email || "");
@@ -74,6 +87,8 @@ export default function LoginForm() {
 
   const toggleReset = () => {
     setResetOpen((prev) => !prev);
+    setError("");
+    setSuccessMessage("");
     setResetError("");
     setResetMessage("");
     if (!resetOpen && !resetEmail) {
@@ -125,6 +140,8 @@ export default function LoginForm() {
       setIssuedToken("");
       setResetPassword("");
       setResetPasswordConfirm("");
+      setResetOpen(false);
+      setSuccessMessage("Password updated. You can log in now.");
     } catch (err) {
       const detail = parseDetail(err);
       setResetError(detail.message || "Unable to reset password.");
@@ -139,6 +156,7 @@ export default function LoginForm() {
       {sessionExpired && (
         <div className="form-error">Your session has expired. Please log in again.</div>
       )}
+      {successMessage && <div className="form-success">{successMessage}</div>}
       {error && <div className="form-error">{error}</div>}
       <form onSubmit={handleSubmit} autoComplete="off">
         <div className="form-group">

@@ -3,12 +3,8 @@ import api from "./axiosConfig";
 
 /**
  * GET DAILY MATCHES FOR CURRENT RENTER
- * Expects query parameter: ?date=YYYY-MM-DD
- *
- * e.g., GET /api/renter/matches?date=2025-06-05
+ * Backend currently returns the current user's ranked daily matches.
  */
-export function getDailyMatches(dateString) {
-  return api.get("/api/renter/matches", {
-    params: { date: dateString },
-  });
+export function getDailyMatches() {
+  return api.get("/api/matches/daily");
 }

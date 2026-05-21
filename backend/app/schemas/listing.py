@@ -7,7 +7,9 @@ class LandlordOut(BaseModel):
     id: int
     name: str = ""
     email: Optional[EmailStr] = ""
+    phone: Optional[str] = ""
     avatar: Optional[str] = ""
+    profilePicture: Optional[str] = ""
     created_at: datetime
 
     class Config:

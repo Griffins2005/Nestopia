@@ -19,10 +19,3 @@ export function linkWallet(walletAddress) {
   return api.post("/api/users/link-wallet", { wallet_address: walletAddress });
 }
 
-/**
- * (Optional) If you have an endpoint to fetch visit requests or other user-specific data:
- * GET /api/users/me/visit-requests
- */
-export function getVisitRequests() {
-  return api.get("/api/users/me/visit-requests");
-}

@@ -14,7 +14,9 @@ def get_listing(db: Session, listing_id: int):
         "id": landlord.id,
         "name": landlord.name or "",
         "avatar": landlord.profilePicture or "",
+        "profilePicture": landlord.profilePicture or "",
         "email": landlord.email or "",
+        "phone": landlord.phone or "",
         "created_at": landlord.created_at
     }
     data = ListingResponse.from_orm(listing).dict()
@@ -44,7 +46,7 @@ def create_listing(db: Session, landlord_id: int, listing_data: dict):
     return new_listing
 
 def update_listing(db: Session, listing_id: int, updates: dict):
-    listing = get_listing(db, listing_id)
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         return None
     for key, val in updates.items():
@@ -57,7 +59,7 @@ def update_listing(db: Session, listing_id: int, updates: dict):
 def delete_listing(db: Session, listing_id: int):
     db.query(SavedListing).filter(SavedListing.listing_id == listing_id).delete()
     db.commit()
-    listing = get_listing(db, listing_id)
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if listing:
         db.delete(listing)
         db.commit()

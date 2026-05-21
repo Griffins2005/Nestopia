@@ -75,31 +75,6 @@ def read_all_listings(
         results.append(data)
     return results
 
-@router.put("/{listing_id}", response_model=ListingResponse)
-def update_listing_endpoint(
-    listing_id: int,
-    request: ListingUpdate,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    listing = get_listing(db, listing_id)
-    if not listing or listing.landlord_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
-    updated = update_listing(db, listing_id, request.dict(exclude_unset=True))
-    return updated
-
-@router.delete("/{listing_id}", response_model=ListingResponse)
-def delete_listing_endpoint(
-    listing_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    listing = get_listing(db, listing_id)
-    if not listing or listing.landlord_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
-    deleted = delete_listing(db, listing_id)
-    return deleted
-
 @router.get("/owned", response_model=List[ListingResponse])
 def get_owned_listings(
     db: Session = Depends(get_db),
@@ -108,38 +83,6 @@ def get_owned_listings(
     if current_user.role != "landlord":
         raise HTTPException(status_code=403, detail="Not a landlord")
     return get_listings_by_landlord(db, current_user.id)
-
-@router.get("/{listing_id}", response_model=ListingResponse)
-def read_listing(listing_id: int, db: Session = Depends(get_db)):
-    listing = get_listing(db, listing_id)
-    if not listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
-    return listing
-
-@router.put("/{listing_id}", response_model=ListingResponse)
-def update_listing_endpoint(
-    listing_id: int,
-    request: ListingUpdate,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    listing = get_listing(db, listing_id)
-    if not listing or listing.landlord_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
-    updated = update_listing(db, listing_id, request.dict(exclude_unset=True))
-    return updated
-
-@router.delete("/{listing_id}", response_model=ListingResponse)
-def delete_listing_endpoint(
-    listing_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    listing = get_listing(db, listing_id)
-    if not listing or listing.landlord_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
-    deleted = delete_listing(db, listing_id)
-    return deleted
 
 @router.get("/saved/", response_model=List[SavedListingWithDetails])
 def list_saved_listings(
@@ -166,3 +109,35 @@ def delete_saved_listing(
     if not removed:
         raise HTTPException(status_code=404, detail="Saved listing not found")
     return removed
+
+@router.get("/{listing_id}", response_model=ListingResponse)
+def read_listing(listing_id: int, db: Session = Depends(get_db)):
+    listing = get_listing(db, listing_id)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return listing
+
+@router.put("/{listing_id}", response_model=ListingResponse)
+def update_listing_endpoint(
+    listing_id: int,
+    request: ListingUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = get_listing(db, listing_id)
+    if not listing or listing.get("landlord_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
+    updated = update_listing(db, listing_id, request.dict(exclude_unset=True))
+    return updated
+
+@router.delete("/{listing_id}", response_model=ListingResponse)
+def delete_listing_endpoint(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = get_listing(db, listing_id)
+    if not listing or listing.get("landlord_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized or listing not found")
+    deleted = delete_listing(db, listing_id)
+    return deleted

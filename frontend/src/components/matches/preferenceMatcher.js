@@ -13,10 +13,12 @@ const PreferenceMatcher = () => {
       <h3>Recommended Listings (Matched by AI)</h3>
       {matches.length === 0 && <div>No matches today</div>}
       {matches.map(listing => (
-        <div key={listing.id}>
+        <div key={listing.listing_id || listing.id}>
           <h4>{listing.title} ({listing.location})</h4>
-          <p>Budget: {listing.budget}</p>
-          <p>Amenities: {listing.amenities?.join(", ")}</p>
+          <p>Rent: ${listing.rent_price?.toLocaleString?.() || listing.rent_price}</p>
+          {typeof listing.compatibility_score === "number" && (
+            <p>Match: {Math.round(listing.compatibility_score * 100)}%</p>
+          )}
         </div>
       ))}
     </div>

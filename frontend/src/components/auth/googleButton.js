@@ -3,7 +3,8 @@ import React from "react";
 
 export default function GoogleButton({ role, disabled }) {
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_BASE_URL}/api/auth/google/login?role=${role}`;
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+    window.location.href = `${apiBaseUrl}/api/auth/google/login?role=${role}`;
   };
 
   return (

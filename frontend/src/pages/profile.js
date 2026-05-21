@@ -9,7 +9,7 @@ import ChangePasswordForm from "../components/profile/changepassword";
 import CreateListingForm from "../components/listings/create";
 import axios from "axios";
 
-axios.defaults.baseURL = "http://localhost:8000";
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 export default function ProfilePage() {
   const { user, setUser } = useContext(AuthContext);

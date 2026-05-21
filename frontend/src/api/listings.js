@@ -12,7 +12,7 @@ import api from "./axiosConfig";
  * }
  */
 export function createListing(payload) {
-  return api.post("/api/landlord/listings", payload);
+  return api.post("/api/listings/", payload);
 }
 
 /**
@@ -26,7 +26,7 @@ export function getAllListings() {
  * GET CURRENT LANDLORD'S LISTINGS
  */
 export function getMyListings() {
-  return api.get("/api/landlord/listings");
+  return api.get("/api/listings/owned");
 }
 
 /**
@@ -41,12 +41,12 @@ export function getListingById(listingId) {
  * payload fields: { title, description, location, rent_price, ... }
  */
 export function updateListing(listingId, payload) {
-  return api.put(`/api/landlord/listings/${listingId}`, payload);
+  return api.put(`/api/listings/${listingId}`, payload);
 }
 
 /**
  * DELETE A LISTING (landlord only)
  */
 export function deleteListing(listingId) {
-  return api.delete(`/api/landlord/listings/${listingId}`);
+  return api.delete(`/api/listings/${listingId}`);
 }

@@ -52,7 +52,13 @@ export default function ListingsPage() {
         .get("/api/listings/saved/", {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         })
-        .then((res) => setSavedIds(res.data.map((l) => l.id)))
+        .then((res) =>
+          setSavedIds(
+            res.data
+              .map((item) => item.listing?.id || item.listing_id || item.id)
+              .filter(Boolean)
+          )
+        )
         .catch(() => setSavedIds([]));
     } else {
       setSavedIds([]);
@@ -138,7 +144,7 @@ export default function ListingsPage() {
               <ListingCard
                 key={listing.id}
                 listing={listing}
-                userRole={viewAsRenter ? "renter" : user?.role}
+                userRole={viewAsRenter || !user ? "renter" : user?.role}
                 initiallySaved={savedIds.includes(listing.id)}
               />
             ))

@@ -44,7 +44,7 @@ export default function ListingDetail() {
   const landlordEmail = (landlord.email || "").trim();
   const landlordPhoneRaw = landlord.phone || "";
   const landlordPhone = landlordPhoneRaw ? landlordPhoneRaw.trim() : "";
-  const landlordAvatar = landlord.profilePicture || avatar;
+  const landlordAvatar = landlord.profilePicture || landlord.avatar || avatar;
   const landlordSince = landlord.created_at
     ? new Date(landlord.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long" })
     : "N/A";
