@@ -1,6 +1,7 @@
 #app/crud/user.py
 from sqlalchemy.orm import Session
 from app.db.models import User, RenterPreferences, LandlordPreferences, Token as TokenModel
+from app.core.password_policy import validate_password_strength
 from app.core.security import get_password_hash, verify_password
 
 def get_user_by_id(db: Session, user_id: int):
@@ -12,9 +13,15 @@ def get_user_by_email_and_role(db: Session, email: str, role: str):
 def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
 
-def create_user(db: Session, email: str, password: str, role: str, method="email"):
+def create_user(db: Session, email: str, password: str, role: str, method="email", name: str = None):
     hashed = get_password_hash(password) if method == "email" else None
-    user = User(email=email, password_hash=hashed, role=role, auth_method=method)
+    user = User(
+        email=email,
+        password_hash=hashed,
+        role=role,
+        auth_method=method,
+        name=(name or "").strip() or None,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -23,13 +30,17 @@ def create_user(db: Session, email: str, password: str, role: str, method="email
     db.commit()
     return user
 
-def create_google_user(db: Session, email: str, role: str):
+def create_google_user(db: Session, email: str, role: str, name: str = None):
     existing = get_user_by_email_and_role(db, email, role)
     if existing:
         if existing.auth_method == "email":
             return "email_only"
+        if name and not existing.name:
+            existing.name = name.strip()
+            db.commit()
+            db.refresh(existing)
         return existing
-    user = create_user(db, email, None, role, method="google")
+    user = create_user(db, email, None, role, method="google", name=name)
     return user
 
 def authenticate_user(db: Session, email: str, password: str, role: str):
@@ -76,6 +87,7 @@ def save_landlord_preferences(db, user_id, data):
 
 
 def set_user_password(db: Session, user: User, new_password: str) -> User:
+    validate_password_strength(new_password)
     user.password_hash = get_password_hash(new_password)
     if user.auth_method != "google":
         user.auth_method = "email"

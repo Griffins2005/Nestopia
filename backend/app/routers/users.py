@@ -1,9 +1,12 @@
 #app/routers/users.py
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Body
-from sqlalchemy.orm import Session
-from app.db.models import RenterPreferences, LandlordPreferences
+from sqlalchemy.orm import Session, joinedload
+from app.db.models import RenterPreferences, LandlordPreferences, User, ProfileReview
 from app.schemas.user import UserResponse, UserUpdateIn, RenterPreferencesIn, LandlordPreferencesIn, RenterPreferencesOut, LandlordPreferencesOut
+from app.schemas.profile import PublicProfileOut, ProfileReviewIn
+from app.utils.profile_helpers import build_public_profile, create_profile_review, normalize_contact_preference, CONTACT_PREFERENCES
 from app.core.security import verify_password, get_password_hash
+from app.core.password_policy import validate_password_strength
 from app.crud.user import get_user_by_id, link_wallet_address, save_renter_preferences, save_landlord_preferences
 from app.dependencies import get_db, get_current_user
 import os
@@ -18,20 +21,58 @@ os.makedirs(PROFILE_PICS_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
+CONTACT_PREFERENCES = {"email", "phone", "text"}
+
+
+def _validate_contact_preference(user, data: dict) -> None:
+    pref = data.get("contact_preference")
+    if pref is None:
+        return
+    if pref not in CONTACT_PREFERENCES:
+        raise HTTPException(
+            status_code=400,
+            detail="contact_preference must be email, phone, or text.",
+        )
+    phone = (data.get("phone") if "phone" in data else user.phone or "").strip()
+    if pref in {"phone", "text"} and not phone:
+        raise HTTPException(
+            status_code=400,
+            detail="Add a phone number before choosing call or text as your preferred contact.",
+        )
+
+
 @router.get("/me", response_model=UserResponse)
 def read_current_user(current_user=Depends(get_current_user)):
-    return current_user 
+    return current_user
 
-@router.patch("/me", response_model=UserResponse)
-def update_profile(
-    update: UserUpdateIn,
+
+@router.get("/profile/{user_id}", response_model=PublicProfileOut)
+def get_public_profile(
+    user_id: int,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    for field, value in update.dict(exclude_unset=True).items():
-        setattr(current_user, field, value)
-    db.commit()
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return build_public_profile(target, current_user, db)
+
     db.refresh(current_user)
+@router.post("/profile/{user_id}/reviews", response_model=PublicProfileOut)
+def submit_profile_review(
+    user_id: int,
+    payload: ProfileReviewIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    create_profile_review(db, current_user, user_id, payload.rating, payload.body)
+    db.refresh(target)
+    return build_public_profile(target, current_user, db)
+
+
     return current_user
 
 @router.post("/upload-profile-doc")
@@ -51,10 +92,19 @@ def change_password(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    if not verify_password(current_password, current_user.password_hash):
+    if current_user.auth_method == "google" and not current_user.password_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="This account uses Google sign-in. Manage your password in Google.",
+        )
+    if not current_user.password_hash or not verify_password(
+        current_password, current_user.password_hash
+    ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
-    if len(new_password) < 8:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password too short")
+    try:
+        validate_password_strength(new_password)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     current_user.password_hash = get_password_hash(new_password)
     db.commit()
     return {"msg": "Password changed"}

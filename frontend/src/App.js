@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/authContext";
+import AuthContext from "./context/authContext";
 import { NestopiaProvider, useNestopia } from "./context/NestopiaContext";
 
 import Navbar from "./components/navbar";
@@ -13,6 +14,7 @@ import Matches from "./pages/matches";
 import Saved from "./pages/saved";
 import Preferences from "./pages/preferences";
 import Profile from "./pages/profile";
+import UserProfile from "./pages/userProfile";
 import OAuthCallback from "./pages/oauthCallback";
 import Onboarding from "./pages/onboarding";
 
@@ -39,6 +41,16 @@ function RequireAuth({ children }) {
 }
 
 function AppInner() {
+  const { loading } = useContext(AuthContext);
+
+  if (loading) {
+    return (
+      <div className="app-container" style={{ padding: "3rem", textAlign: "center", color: "var(--ntp-gray-500)" }}>
+        Loading…
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -55,6 +67,7 @@ function AppInner() {
           <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
           <Route path="/preferences" element={<RequireAuth><Preferences /></RequireAuth>} />
           <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+          <Route path="/users/:id" element={<RequireAuth><UserProfile /></RequireAuth>} />
           <Route path="/oauth-callback" element={<OAuthCallback />} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />

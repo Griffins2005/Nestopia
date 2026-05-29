@@ -20,8 +20,11 @@ class User(Base):
     name = Column(String)
     about = Column(String)
     phone = Column(String)
+    contact_preference = Column(String(10), nullable=False, default="any")  # any | text | email
     location = Column(String)
     profilePicture = Column(String)
+    totp_secret = Column(String(64), nullable=True)
+    totp_enabled = Column(Boolean, default=False, nullable=False)
     __table_args__ = (
         UniqueConstraint('email', 'role', name='unique_email_role'),
     )
@@ -32,6 +35,71 @@ class User(Base):
     saved_listings = relationship("SavedListing", back_populates="user", cascade="all, delete-orphan")
     tokens = relationship("Token", back_populates="user", uselist=False)
     visit_requests = relationship("VisitRequest", back_populates="renter")
+    reviews_written = relationship(
+        "ProfileReview",
+        foreign_keys="ProfileReview.reviewer_id",
+        back_populates="reviewer",
+    )
+    reviews_received = relationship(
+        "ProfileReview",
+        foreign_keys="ProfileReview.reviewee_id",
+        back_populates="reviewee",
+    )
+
+class ProfileReview(Base):
+    __tablename__ = "profile_reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reviewee_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    rating = Column(Integer, nullable=False)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    reviewer = relationship("User", foreign_keys=[reviewer_id], back_populates="reviews_written")
+    reviewee = relationship("User", foreign_keys=[reviewee_id], back_populates="reviews_received")
+    __table_args__ = (
+        UniqueConstraint("reviewer_id", "reviewee_id", name="unique_profile_review_pair"),
+    )
+
+
+class RentalApplication(Base):
+    __tablename__ = "rental_applications"
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    landlord_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(32), nullable=False, default="pending")
+    move_in_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    listing = relationship("Listing", back_populates="applications")
+    tenant = relationship("User", foreign_keys=[tenant_id])
+    landlord = relationship("User", foreign_keys=[landlord_id])
+    tours = relationship("TourRequest", back_populates="application", cascade="all, delete-orphan")
+
+
+class TourRequest(Base):
+    __tablename__ = "tour_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    application_id = Column(Integer, ForeignKey("rental_applications.id", ondelete="CASCADE"), nullable=False)
+    proposed_by_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    scheduled_at = Column(DateTime, nullable=False)
+    status = Column(String(20), nullable=False, default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    application = relationship("RentalApplication", back_populates="tours")
+    proposed_by = relationship("User")
+
+
+class ListingOccupant(Base):
+    __tablename__ = "listing_occupants"
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    application_id = Column(Integer, ForeignKey("rental_applications.id", ondelete="SET NULL"), nullable=True)
+    move_in_date = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    listing = relationship("Listing", back_populates="occupants")
+    user = relationship("User")
+
 
 class Listing(Base):
     __tablename__ = "listings"
@@ -58,10 +126,16 @@ class Listing(Base):
     images = Column(JSON, nullable=True, default=[])
     sqft = Column(Integer, nullable=True)
     house_rules = Column(JSON, nullable=True, default=[])
+    tenant_preferences = Column(JSON, nullable=False, default=[])
+    tenant_custom_requirements = Column(JSON, nullable=False, default=[])
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
     landlord = relationship("User", back_populates="listings")
     matches = relationship("DailyMatch", back_populates="listing")
     visit_requests = relationship("VisitRequest", back_populates="listing")
+    applications = relationship("RentalApplication", back_populates="listing")
+    occupants = relationship("ListingOccupant", back_populates="listing")
 
 class SavedListing(Base):
     __tablename__ = "saved_listings"

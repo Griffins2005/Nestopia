@@ -28,8 +28,7 @@ def redirect_to_login(error: str, message: str, role: str = "renter"):
 @router.get("/api/auth/google/login")
 async def login_via_google(request: Request):
     role = request.query_params.get("role", "renter")
-    redirect_uri = str(request.url_for("auth_google_callback"))
-    # Use 'state' to pass role, as recommended by OAuth
+    redirect_uri = settings.GOOGLE_REDIRECT_URI or f"{settings.FRONTEND_URL}/api/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri, state=role)
 
 @router.get("/api/auth/google/callback")
@@ -76,6 +75,7 @@ async def auth_google_callback(request: Request):
         )
 
     email = userinfo.get("email")
+    display_name = userinfo.get("name") or userinfo.get("given_name")
     if not email:
         logger.error("No email from Google: %s", userinfo)
         return redirect_to_login(
@@ -86,7 +86,7 @@ async def auth_google_callback(request: Request):
 
     db = SessionLocal()
     try:
-        result = crud_user.create_google_user(db, email, role)
+        result = crud_user.create_google_user(db, email, role, name=display_name)
         if result == "email_only":
             return redirect_to_login(
                 "email_only",
@@ -95,6 +95,9 @@ async def auth_google_callback(request: Request):
             )
         user = result if hasattr(result, "id") else result
         jwt_token = create_access_token({"user_id": user.id, "role": user.role})
-        return RedirectResponse(f"{settings.FRONTEND_URL}/oauth-callback?token={jwt_token}")
+        response = RedirectResponse(f"{settings.FRONTEND_URL}/oauth-callback")
+        from app.core.cookies import set_auth_cookie
+        set_auth_cookie(response, jwt_token)
+        return response
     finally:
         db.close()

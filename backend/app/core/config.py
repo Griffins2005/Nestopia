@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     FRONTEND_URL: str = "http://localhost:3000"
+    APP_NAME: str = "Nestopia"
     USE_ML_MATCHING: bool = True
     USE_SEMANTIC_MATCHING: bool = False
 
@@ -34,12 +35,19 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379/0"  # for Celery
 
-    # OAuth
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    # OAuth (optional for local dev without Google sign-in)
+    GOOGLE_CLIENT_ID: str = "local-dev.apps.googleusercontent.com"
+    GOOGLE_CLIENT_SECRET: str = "local-dev-secret"
 
     SESSION_SECRET_KEY: str = "your_super_secret_key"
     PASSWORD_RESET_TOKEN_MINUTES: int = 30
+
+    # HttpOnly session cookie (JWT)
+    AUTH_COOKIE_NAME: str = "nestopia_session"
+    COOKIE_SECURE: bool = False  # True in production (HTTPS)
+    COOKIE_SAMESITE: str = "lax"
+    # OAuth callback through frontend proxy in dev: http://localhost:3000/api/auth/google/callback
+    GOOGLE_REDIRECT_URI: Optional[str] = None
 
     class Config:
         env_file = ".env"

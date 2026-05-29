@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
 from app.db.session import engine, Base
+from app.db.dev_migrations import ensure_user_security_columns, ensure_listing_tenant_columns
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -16,10 +17,13 @@ from app.routers import (
     matches,
     tokens,
     payments,
-    google_oauth, 
+    google_oauth,
+    security,
+    geo,
     wallet,
     blockchain,
     stats,
+    applications,
 )
 from app.core.config import settings
 
@@ -47,6 +51,8 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    ensure_user_security_columns(engine)
+    ensure_listing_tenant_columns(engine)
 
 # Routers
 app.include_router(auth.router)
@@ -57,9 +63,12 @@ app.include_router(matches.router)
 app.include_router(tokens.router)
 app.include_router(payments.router)
 app.include_router(google_oauth.router)
+app.include_router(security.router)
+app.include_router(geo.router)
 app.include_router(wallet.router)
 app.include_router(blockchain.router)
 app.include_router(stats.router)
+app.include_router(applications.router)
 
 @app.get("/health")
 def read_health():

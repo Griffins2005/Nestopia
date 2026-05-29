@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import AuthContext from "../../context/authContext";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 import CreateListingForm from "./create";
 
 export default function EditListingPage() {
@@ -12,11 +12,9 @@ export default function EditListingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user?.accessToken) return;
-    axios
-      .get(`/api/listings/${id}`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` }
-      })
+    if (!user) return;
+    api
+      .get(`/api/listings/${id}`)
       .then(res => setFields(res.data));
   }, [id, user]);
 

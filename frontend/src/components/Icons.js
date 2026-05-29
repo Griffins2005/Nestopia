@@ -68,8 +68,41 @@ const ICONS = {
   pen: (
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.06 4.94l3 3L7.92 17.08l-3.92.92.92-3.92L14.06 4.94zm1.41-1.41l1.3-1.3a1.5 1.5 0 0 1 2.12 0l.88.88a1.5 1.5 0 0 1 0 2.12l-1.3 1.3-3-3z"/></svg>
   ),
+  bed: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5a3 3 0 0 0-3 3v2H3v9h2v-2h14v2h2v-9h-1V8a3 3 0 0 0-3-3H7zm0 2h10a1 1 0 0 1 1 1v1H6V8a1 1 0 0 1 1-1z"/></svg>
+  ),
+  bath: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12h16v2a4 4 0 0 1-4 4h-.1A5 5 0 0 1 8 18H7a4 4 0 0 1-4-4v-2zm2 4a2 2 0 0 0 2 2h1a3 3 0 0 0 3-3V14H6v2zm14-8H4V6h16v2z"/></svg>
+  ),
+  ruler: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 8.5A1.5 1.5 0 0 1 3.5 7H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3.5A1.5 1.5 0 0 1 2 15.5v-7zM6 9v1h1V9H6zm3 0v1h1V9H9zm3 0v1h1V9h-1zm3 0v1h1V9h-1z"/></svg>
+  ),
+  "map-pin": (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+  ),
+  message: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg>
+  ),
+  star: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9L22 10.2l-5.2 4.5L18.5 22 12 18.2 5.5 22l1.7-7.3L2 10.2l7.1-1.3L12 2z"/></svg>
+  ),
+  "star-outline": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M12 2l2.9 6.9L22 10.2l-5.2 4.5L18.5 22 12 18.2 5.5 22l1.7-7.3L2 10.2l7.1-1.3L12 2z"/></svg>
+  ),
   g: (
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 9.9 11.4H12v-3.4h9.6A10 10 0 0 0 12 2zm0 2.5a7.5 7.5 0 0 1 5.3 2.2l-2 2A4.7 4.7 0 1 0 16.5 14H12V12h7v-2H12V4.5z"/></svg>
+  ),
+  gear: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5zm8.94 3.5a7.96 7.96 0 0 1-.12 1l2.11 1.65-2 3.46-2.49-1a8.09 8.09 0 0 1-1.73 1l-.38 2.65H9.67l-.38-2.65a8.09 8.09 0 0 1-1.73-1l-2.49 1-2-3.46 2.11-1.65a7.96 7.96 0 0 1-.12-1c0-.34.04-.67.12-1L2.06 10.35l2-3.46 2.49 1a8.09 8.09 0 0 1 1.73-1l.38-2.65h4.68l.38 2.65a8.09 8.09 0 0 1 1.73 1l2.49-1 2 3.46-2.11 1.65c.08.33.12.66.12 1z"/></svg>
+  ),
+  lock: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 8V6a5 5 0 0 0-10 0v2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2zm-8 0V6a3 3 0 0 1 6 0v2H9z"/></svg>
+  ),
+  activity: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  ),
+  home: (
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v10h-5v-6H11v6H6V11H3l9-8z"/></svg>
   ),
 };
 

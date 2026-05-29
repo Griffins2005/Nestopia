@@ -1,7 +1,113 @@
 // src/components/preferences/form.js
 import React, { useState, useContext, useEffect } from "react";
+import { Icon } from "../Icons";
 import AuthContext from "../../context/authContext";
-import axios from "axios";
+import api from "../../api/axiosConfig";
+import { normalizeCustomTag } from "../../api/preferences";
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+export const RENTER_AMENITY_SUGGESTIONS = [
+  "Pet-friendly", "Private garden", "In-unit laundry", "Dishwasher", "Parking",
+  "Gym", "Rooftop", "Doorman", "Storage", "Balcony", "Pool", "EV charging",
+  "Furnished", "Air conditioning", "Hardwood floors", "Natural light",
+];
+
+export const LISTING_AMENITY_SUGGESTIONS = [
+  "Pet-friendly", "In-unit laundry", "Dishwasher", "Private garden", "Private yard",
+  "Stoop", "High ceilings", "Bay window", "Skyline view", "Mountain view",
+  "Hardwood floors", "Concrete floors", "Elevator", "Roof access", "Bike storage",
+  "Driveway parking", "Front porch", "Restored detail", "Central AC", "Outdoor space",
+  "Parking", "Gym", "Rooftop", "Doorman", "Storage", "Balcony", "Pool", "EV charging",
+  "Furnished", "Air conditioning", "Natural light", "Backyard",
+];
+
+export function ChipPickerWithCustom({
+  value = [],
+  onChange,
+  suggestions = [],
+  placeholder = "Add custom…",
+  addLabel = "Add",
+}) {
+  const [draft, setDraft] = useState("");
+  const selected = value || [];
+  const toggle = (item) =>
+    onChange(selected.includes(item) ? selected.filter((x) => x !== item) : [...selected, item]);
+
+  const addCustom = () => {
+    const tag = normalizeCustomTag(draft);
+    if (!tag || selected.includes(tag)) return;
+    onChange([...selected, tag]);
+    setDraft("");
+  };
+
+  return (
+    <>
+      <div className="chip-pick">
+        {selected.map((item) => (
+          <button type="button" key={item} className="pick active" onClick={() => toggle(item)}>
+            <Icon name="circle-check" /> {item}
+          </button>
+        ))}
+        {suggestions.filter((item) => !selected.includes(item)).map((item) => (
+          <button type="button" key={item} className="pick" onClick={() => toggle(item)}>
+            {item}
+          </button>
+        ))}
+      </div>
+      <div className="custom-chip-row">
+        <input
+          className="form-input"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={placeholder}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addCustom();
+            }
+          }}
+        />
+        <button type="button" className="cta-btn ghost small" onClick={addCustom}>
+          {addLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+export function AmenitiesPicker(props) {
+  return (
+    <ChipPickerWithCustom
+      suggestions={RENTER_AMENITY_SUGGESTIONS}
+      placeholder="Add custom amenity"
+      {...props}
+    />
+  );
+}
+
+export function MoveInFields({ from, to, onChange, error, touched, idPrefix = 'move-in' }) {
+  const setFrom = (value) => {
+    onChange({ from: value, to: value && to && to < value ? '' : to });
+  };
+  return (
+    <div className={`move-in-window${error && touched ? ' has-error' : ''}`}>
+      <div className="form-grid-2">
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-from`}>Move-in from</label>
+          <input id={`${idPrefix}-from`} className="form-input move-in-date" type="date" value={from}
+            onChange={(e) => setFrom(e.target.value)} min={todayIso()} />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-to`}>Move-in to <span className="opt">(optional)</span></label>
+          <input id={`${idPrefix}-to`} className="form-input move-in-date" type="date" value={to}
+            onChange={(e) => onChange({ from, to: e.target.value })} min={from || todayIso()} />
+        </div>
+      </div>
+      {touched && error && <span className="field-error">{error}</span>}
+    </div>
+  );
+}
 
 const locationOptions = [
   "Downtown", "Midtown", "Uptown", "Suburbs", "East Side", "West Side"
@@ -30,7 +136,7 @@ const buildingAmenitiesOptions = [
 const smokingOptions = ["No smoking", "Prefer non-smoking", "No preference", "Smoking friendly"];
 const noiseOptions = ["Very quiet", "Moderate", "No preference"];
 const visitorOptions = ["Strict hours", "Flexible", "No preference"];
-const tenantRequirements = [
+export const TENANT_REQUIREMENT_SUGGESTIONS = [
   "No smoking", "No pets", "No subletting", "Credit check required", "Background check required",
   "References required", "Rental history required", "Employment verification",
   "Proof of insurance required", "Security deposit required", "First and last month rent",
@@ -38,6 +144,8 @@ const tenantRequirements = [
   "No criminal history", "Clean rental history", "Good credit score", "Co-signer accepted",
   "Maximum occupants limit"
 ];
+
+const tenantRequirements = TENANT_REQUIREMENT_SUGGESTIONS;
 
 export default function PreferencesForm({ userType, onComplete }) {
   const [step, setStep] = useState(1);
@@ -79,21 +187,19 @@ export default function PreferencesForm({ userType, onComplete }) {
   // Prefill on mount/user change
   useEffect(() => {
     async function fetchPrefs() {
-      if (!user?.accessToken) return;
+      if (!user) return;
       try {
         const endpoint =
           userType === "renter"
             ? "/api/preferences/renter"
             : "/api/preferences/landlord";
-        const { data } = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${user.accessToken}` }
-        });
+        const { data } = await api.get(endpoint);
         if (userType === "renter" && data) setRenterPrefs(prev => ({ ...prev, ...data }));
         if (userType === "landlord" && data) setLandlordPrefs(prev => ({ ...prev, ...data }));
       } catch (err) {}
     }
     fetchPrefs();
-  }, [userType, user?.accessToken]);
+  }, [userType, user]);
 
   // Handlers for renter
   const handleLocationToggle = (loc) => {
@@ -195,7 +301,7 @@ export default function PreferencesForm({ userType, onComplete }) {
   const saveCurrentStep = async () => {
     setError("");
     setLoading(true);
-    if (!user?.accessToken) {
+    if (!user) {
       setError("Not logged in. Please log in again.");
       setLoading(false);
       return;
@@ -209,9 +315,7 @@ export default function PreferencesForm({ userType, onComplete }) {
         endpoint = "/api/preferences/landlord";
         prefs = landlordPrefs;
       }
-      await axios.post(endpoint, prefs, {
-        headers: { Authorization: `Bearer ${user.accessToken}` }
-      });
+      await api.post(endpoint, prefs);
     } catch (e) {
       setError("Error saving preferences.");
     }
@@ -327,10 +431,7 @@ export default function PreferencesForm({ userType, onComplete }) {
               max="3"
               value={renterPrefs.bathrooms}
               onChange={(e) =>
-                setRenterPrefs({
-                  ...renterPrefs,
-                  bathrooms: parseFloat(e.target.value)
-                })
+                setRenterPrefs({ ...renterPrefs, bathrooms: parseInt(e.target.value, 10) || 1 })
               }
             />
             <label className="preferences-label">How many people will live with you?</label>

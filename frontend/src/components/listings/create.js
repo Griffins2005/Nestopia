@@ -2,7 +2,7 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import AuthContext from "../../context/authContext";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 
 // Category groupings for UX only (not backend)
 const PROPERTY_TYPES = [
@@ -100,7 +100,7 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
     for (const file of files) {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await axios.post("/api/listings/upload-image", formData, {
+      const res = await api.post("/api/listings/upload-image", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       uploadedUrls.push(res.data.url);
@@ -172,14 +172,10 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
         images: fields.images
       };
       if (edit) {
-        await axios.put(`/api/listings/${initialFields.id}`, payload, {
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${user?.accessToken}` }
-        });
+        await api.put(`/api/listings/${initialFields.id}`, payload);
         setStatusMessage("Listing updated!");
       } else {
-        await axios.post("/api/listings/", payload, {
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${user?.accessToken}` }
-        });
+        await api.post("/api/listings/", payload);
         setStatusMessage("Listing created!");
       }
       setTimeout(() => {

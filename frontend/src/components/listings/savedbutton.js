@@ -3,7 +3,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 import { FiHeart } from "react-icons/fi";
 
 export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
@@ -15,7 +15,7 @@ export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
 
   const toggleSave = async (e) => {
     e.preventDefault();
-    if (!user || !user.accessToken) {
+    if (!user) {
       navigate("/login", {
         state: {
           from: { pathname: location.pathname },
@@ -27,17 +27,13 @@ export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
 
     if (saved) {
       // Remove from saved listings
-      await axios.delete(`/api/listings/saved/${listingId}`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` }
-      });
+      await api.delete(`/api/listings/saved/${listingId}`);
       setSaved(false);
       if (onUnsave) onUnsave(listingId); // Callback to remove from saved listings page
     } else {
       // Save - only allow once
       try {
-        await axios.post(`/api/listings/saved/${listingId}`, {}, {
-          headers: { Authorization: `Bearer ${user.accessToken}` }
-        });
+        await api.post(`/api/listings/saved/${listingId}`, {});
         setSaved(true);
         setAlertMsg("Listing saved!");
         setTimeout(() => setAlertMsg(""), 1800);

@@ -1,11 +1,12 @@
 # app/routers/auth.py
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.schemas.auth import (
     SignUpRequest,
     LoginRequest,
-    Token as TokenSchema,
+    Verify2FARequest,
     PasswordResetRequest,
     PasswordResetRequestResponse,
     PasswordResetConfirm,
@@ -18,16 +19,25 @@ from app.core.security import (
     verify_password,
     generate_password_reset_token,
     decode_password_reset_token,
+    create_mfa_challenge_token,
+    decode_mfa_challenge_token,
 )
-from app.dependencies import get_db
+from app.core.password_policy import validate_password_strength
+from app.core.totp import verify_totp_code
+from app.core.cookies import set_auth_cookie, clear_auth_cookie
+from app.dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-def _login_and_return_token(user):
-    access_token = create_access_token(data={"user_id": user.id, "role": user.role})
-    return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/signup", response_model=TokenSchema)
+def _auth_response(user):
+    access_token = create_access_token(data={"user_id": user.id, "role": user.role})
+    response = JSONResponse(content={"message": "ok", "role": user.role})
+    set_auth_cookie(response, access_token)
+    return response
+
+
+@router.post("/signup")
 def signup(data: SignUpRequest, db: Session = Depends(get_db)):
     if not data.role:
         raise HTTPException(
@@ -55,20 +65,21 @@ def signup(data: SignUpRequest, db: Session = Depends(get_db)):
             },
         )
     try:
+        validate_password_strength(data.password)
         user = crud_user.create_user(
-            db, data.email, data.password, data.role, method="email"
+            db, data.email, data.password, data.role, method="email", name=data.name
         )
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail={
-                "code": "password_too_long",
+                "code": "invalid_password",
                 "message": str(exc),
             },
         ) from exc
-    return _login_and_return_token(user)
+    return _auth_response(user)
 
-@router.post("/login", response_model=TokenSchema)
+@router.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not data.role:
         raise HTTPException(
@@ -111,7 +122,61 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
                 "message": "Email or password is incorrect.",
             },
         )
-    return _login_and_return_token(user)
+    if user.totp_enabled and user.totp_secret:
+        challenge = create_mfa_challenge_token(user.id, user.role)
+        return JSONResponse(
+            content={
+                "requires_2fa": True,
+                "challenge_token": challenge,
+                "message": "Enter the code from your authenticator app.",
+            }
+        )
+    return _auth_response(user)
+
+
+@router.post("/verify-2fa")
+def verify_2fa(data: Verify2FARequest, db: Session = Depends(get_db)):
+    try:
+        payload = decode_mfa_challenge_token(data.challenge_token)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_challenge",
+                "message": "Your sign-in session expired. Please log in again.",
+            },
+        ) from exc
+
+    user = crud_user.get_user_by_id(db, payload.user_id)
+    if not user or user.role != payload.role or not user.totp_enabled:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_challenge",
+                "message": "Could not verify two-factor authentication.",
+            },
+        )
+    if not verify_totp_code(user.totp_secret, data.code):
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "invalid_totp",
+                "message": "That code didn't work. Check your authenticator and try again.",
+            },
+        )
+    return _auth_response(user)
+
+
+@router.post("/logout")
+def logout():
+    response = JSONResponse(content={"message": "logged out"})
+    clear_auth_cookie(response)
+    return response
+
+
+@router.get("/session")
+def session(current_user=Depends(get_current_user)):
+    return {"authenticated": True, "user_id": current_user.id, "role": current_user.role}
 
 
 @router.post(
@@ -193,7 +258,7 @@ def confirm_password_reset(
         raise HTTPException(
             status_code=400,
             detail={
-                "code": "password_too_long",
+                "code": "invalid_password",
                 "message": str(exc),
             },
         ) from exc

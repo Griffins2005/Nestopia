@@ -27,7 +27,7 @@ export default function Navbar() {
         onKeyDown={e => e.key === 'Enter' && navigate('/')}
       >
         <span className="navbar-ntp-logo">
-          <img src="/assets/nestopia-logo.png" alt="Nestopia" />
+          <img src="/assets/nestopia-logo.svg" alt="" aria-hidden="true" />
         </span>
         <span className="navbar-ntp-title">Nestopia</span>
       </div>

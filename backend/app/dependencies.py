@@ -1,14 +1,13 @@
-from fastapi import Depends, HTTPException, Header
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from jose import JWTError
 from typing import Optional
 
 from app.core.security import decode_access_token
+from app.core.cookies import extract_access_token
 from app.db.session import SessionLocal
 from app.crud.user import get_user_by_id
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def get_db():
     db = SessionLocal()
@@ -17,9 +16,8 @@ def get_db():
     finally:
         db.close()
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    if not token or token == "undefined" or token == "null":
-        raise HTTPException(status_code=401, detail="No token provided")
+
+def _user_from_token(token: str, db: Session):
     try:
         payload = decode_access_token(token)
     except JWTError:
@@ -32,16 +30,20 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
-def get_optional_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Optional authentication - returns None if no token, otherwise returns user"""
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.replace("Bearer ", "").strip()
-    if not token or token == "undefined" or token == "null":
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = extract_access_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return _user_from_token(token, db)
+
+
+def get_optional_user(request: Request, db: Session = Depends(get_db)):
+    """Optional authentication — returns None when no valid session."""
+    token = extract_access_token(request)
+    if not token:
         return None
     try:
-        payload = decode_access_token(token)
-        user = get_user_by_id(db, payload.user_id)
-        return user
-    except (JWTError, Exception):
+        return _user_from_token(token, db)
+    except HTTPException:
         return None

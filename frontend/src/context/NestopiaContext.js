@@ -1,59 +1,119 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AuthContext from './authContext';
-import { getAllListings, createListing as apiCreate, updateListing as apiUpdate, deleteListing as apiDelete } from '../api/listings';
+import {
+  getAllListings,
+  createListing as apiCreate,
+  updateListing as apiUpdate,
+  deleteListing as apiDelete,
+} from '../api/listings';
 import { getRenterPreferences, setRenterPreferences } from '../api/preferences';
-import axios from 'axios';
+import api from '../api/axiosConfig';
 
 const NestopiaContext = createContext(null);
 
-const normalizeListing = (l) => ({
-  ...l,
-  image: l.images?.[0] || l.image || '/assets/default-house.png',
-  match_score: l.match_score || 0,
-  lat: l.latitude || l.lat || null,
-  lng: l.longitude || l.lng || null,
-  amenities: l.amenities || [],
-  host: l.host || {
-    name: l.landlord_name || l.owner_name || 'Host',
-    since: String(new Date(l.created_at || Date.now()).getFullYear()),
-    email: l.landlord_email || l.contact_email || '',
-    phone: l.landlord_phone || l.contact_phone || '',
-  },
-});
+export const normalizeListing = (l) => {
+  const landlord = l.landlord || {};
+  const lat = l.latitude ?? l.lat ?? null;
+  const lng = l.longitude ?? l.lng ?? null;
+  const houseRules = Array.isArray(l.house_rules)
+    ? l.house_rules.join(', ')
+    : l.house_rules;
+
+  return {
+    ...l,
+    image: l.images?.[0] || l.image || '/assets/default-house.png',
+    match_breakdown: l.match_breakdown ?? null,
+    match_score: l.match_breakdown?.overall ?? l.match_score ?? null,
+    lat,
+    lng,
+    amenities: l.amenities || [],
+    tenant_preferences: l.tenant_preferences || [],
+    tenant_custom_requirements: l.tenant_custom_requirements || [],
+    pets: l.pets || (l.pets_allowed === false ? 'No pets' : l.pets_allowed ? 'Pet-friendly' : undefined),
+    house_rules: houseRules || l.house_rules,
+    lease_length: typeof l.lease_length === 'number' ? `${l.lease_length} months` : l.lease_length,
+    host: l.host || {
+      name: landlord.name || l.landlord_name || l.owner_name || 'Host',
+      id: landlord.id,
+      since: String(new Date(landlord.created_at || l.created_at || Date.now()).getFullYear()),
+      email: landlord.email || l.landlord_email || l.contact_email || '',
+      phone: landlord.phone || l.landlord_phone || l.contact_phone || '',
+      contact_preference: landlord.contact_preference || 'any',
+      profilePicture: landlord.profilePicture || landlord.avatar || '',
+    },
+  };
+};
+
+const normalizePreferences = (p) => {
+  if (!p || Object.keys(p).length === 0) return null;
+  return {
+    ...p,
+    household: p.household ?? p.household_size ?? 1,
+    move_in: p.move_in ?? p.move_in_date ?? '',
+    pets: p.pets ?? (p.pets_allowed === false ? 'No pets' : 'Dog'),
+    lease_length: typeof p.lease_length === 'number' ? `${p.lease_length} months` : (p.lease_length || '12 months'),
+  };
+};
 
 export function NestopiaProvider({ children }) {
   const auth = useContext(AuthContext);
-  const user = auth?.user ?? null;
+  const user = auth?.loading ? null : (auth?.user ?? null);
 
   const [listings, setListings] = useState([]);
+  const [listingsStatus, setListingsStatus] = useState('loading');
   const [savedIds, setSavedIds] = useState([]);
   const [preferences, setPreferences] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    getAllListings()
-      .then(res => setListings((res.data || []).map(normalizeListing)))
-      .catch(() => {});
+  const loadListings = useCallback((viewAsRenter = false) => {
+    setListingsStatus('loading');
+    return getAllListings(viewAsRenter)
+      .then((res) => {
+        const data = (res.data || []).map(normalizeListing);
+        setListings(data);
+        setListingsStatus('ready');
+        return data;
+      })
+      .catch(() => {
+        setListings([]);
+        setListingsStatus('unavailable');
+        return [];
+      });
   }, []);
 
   useEffect(() => {
-    if (!user?.accessToken) { setSavedIds([]); return; }
-    axios.get('/api/listings/saved/', {
-      baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
-      headers: { Authorization: `Bearer ${user.accessToken}` },
-    })
-      .then(res => setSavedIds((res.data || []).map(l => l.id || l)))
-      .catch(() => setSavedIds([]));
-  }, [user?.accessToken]);
+    loadListings(false);
+  }, [loadListings, user?.id, user?.role]);
 
   useEffect(() => {
-    if (!user?.accessToken || user?.role !== 'renter') return;
-    getRenterPreferences()
-      .then(res => {
-        if (res.data && Object.keys(res.data).length > 0) setPreferences(res.data);
+    if (auth?.loading) return;
+    if (!user) {
+      setSavedIds([]);
+      setPreferences(null);
+      return;
+    }
+    api.get('/api/listings/saved/')
+      .then((res) => {
+        const ids = (res.data || []).map((item) => item.id);
+        setSavedIds(ids);
       })
-      .catch(() => {});
-  }, [user?.accessToken, user?.role]);
+      .catch(() => setSavedIds([]));
+  }, [auth?.loading, user]);
+
+  useEffect(() => {
+    if (auth?.loading) return;
+    if (!user || user?.role !== 'renter') {
+      if (user?.role !== 'renter') setPreferences(null);
+      return;
+    }
+    getRenterPreferences()
+      .then((res) => {
+        const normalized = normalizePreferences(res.data);
+        if (normalized) setPreferences(normalized);
+        else setPreferences(null);
+      })
+      .catch(() => setPreferences(null));
+  }, [auth?.loading, user]);
 
   const flashToast = useCallback((msg) => {
     setToast(msg);
@@ -61,47 +121,50 @@ export function NestopiaProvider({ children }) {
   }, []);
 
   const toggleSave = useCallback(async (id) => {
-    if (!user?.accessToken) return;
-    const headers = { Authorization: `Bearer ${user.accessToken}` };
-    const base = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+    if (!user) return;
     if (savedIds.includes(id)) {
-      await axios.delete(`${base}/api/listings/saved/${id}`, { headers });
-      setSavedIds(ids => ids.filter(x => x !== id));
+      await api.delete(`/api/listings/saved/${id}`);
+      setSavedIds((ids) => ids.filter((x) => x !== id));
     } else {
-      await axios.post(`${base}/api/listings/saved/${id}`, {}, { headers });
-      setSavedIds(ids => [...ids, id]);
+      await api.post(`/api/listings/saved/${id}`, {});
+      setSavedIds((ids) => [...ids, id]);
     }
-  }, [user?.accessToken, savedIds]);
+  }, [user, savedIds]);
 
   const addListing = useCallback(async (data) => {
     const res = await apiCreate(data);
     const created = normalizeListing(res.data);
-    setListings(ls => [created, ...ls]);
+    setListings((ls) => [created, ...ls]);
     return created;
   }, []);
 
   const updateListing = useCallback(async (id, patch) => {
     const res = await apiUpdate(id, patch);
     const updated = normalizeListing(res.data);
-    setListings(ls => ls.map(l => l.id === id ? updated : l));
+    setListings((ls) => ls.map((l) => (l.id === id ? updated : l)));
   }, []);
 
   const deleteListing = useCallback(async (id) => {
     await apiDelete(id);
-    setListings(ls => ls.filter(l => l.id !== id));
-    setSavedIds(ids => ids.filter(x => x !== id));
+    setListings((ls) => ls.filter((l) => l.id !== id));
+    setSavedIds((ids) => ids.filter((x) => x !== id));
   }, []);
 
   const savePreferences = useCallback(async (prefs) => {
     await setRenterPreferences(prefs);
-    setPreferences(prefs);
-  }, []);
+    const normalized = normalizePreferences(prefs);
+    setPreferences(normalized);
+    if (auth?.refreshProfile) await auth.refreshProfile();
+  }, [auth]);
 
   return (
     <NestopiaContext.Provider value={{
       user,
       logout: auth?.logout,
       listings,
+      listingsStatus,
+      loadListings,
+      retryListings: () => loadListings(false),
       addListing,
       updateListing,
       deleteListing,

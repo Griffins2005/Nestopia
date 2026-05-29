@@ -1,22 +1,33 @@
-// src/api/axiosConfig.js
-import axios from "axios";
+// Shared API client — session via httpOnly cookie (withCredentials).
+import axios from 'axios';
+import { API_BASE_URL } from './getBaseUrl';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:8000",
-  headers: { "Content-Type": "application/json" },
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
-// Axios interceptor: redirect to login if token is expired
+const AUTH_ROUTES = ['/api/auth/login', '/api/auth/signup'];
+
+let onUnauthorized = null;
+
+/** AuthProvider registers this to clear session + navigate without reload loops. */
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403)
-    ) {
-      window.localStorage.removeItem("user"); // optional: clear user data
-      window.location = "/login?expired=1";
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const isAuthAttempt = AUTH_ROUTES.some((route) => url.includes(route));
+
+    if (status === 401 && !isAuthAttempt && onUnauthorized) {
+      onUnauthorized(error);
     }
+
     return Promise.reject(error);
   }
 );

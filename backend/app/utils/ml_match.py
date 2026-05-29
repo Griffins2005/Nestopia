@@ -72,7 +72,7 @@ class SmartMatcher:
         from app.utils.match import compute_compatibility_score
         
         # 1. Base rule-based score (maintains existing logic)
-        base_score = compute_compatibility_score(renter, landlord_prefs, listing)
+        base_score = compute_compatibility_score(renter, None, listing)
         
         # 2. Behavioral signal (learned from user actions)
         behavioral_boost = self._compute_behavioral_signal(
@@ -233,7 +233,7 @@ class SmartMatcher:
         - Location name fuzzy matching
         """
         try:
-            from app.utilis.geo import location_compatibility_score
+            from app.utils.geo import location_compatibility_score
         except ImportError:
             location_compatibility_score = None
         

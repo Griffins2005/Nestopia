@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import AuthContext from "../../context/authContext";
 import SavedOrOwnedListingCard from "./savedorowned";
+import api from "../../api/axiosConfig";
 
 export default function SavedListingsPage({ mode, onEditListing }) {
   const { user } = useContext(AuthContext);
@@ -10,20 +11,16 @@ export default function SavedListingsPage({ mode, onEditListing }) {
 
   // Fetch on mount or when user/mode changes
   useEffect(() => {
-    if (!user?.accessToken) return;
+    if (!user) return;
 
     setLoading(true);
-    let url;
-    if (mode === "owned" && user.role === "landlord") {
-      url = "/api/listings/owned";
-    } else {
-      url = "/api/listings/saved/";
-    }
+    const url = mode === "owned" && user.role === "landlord"
+      ? "/api/listings/owned"
+      : "/api/listings/saved/";
 
-    fetch(url, { headers: { Authorization: `Bearer ${user.accessToken}` } })
-      .then((res) => res.json())
-      .then((data) => {
-        setListings(data);
+    api.get(url)
+      .then((res) => {
+        setListings(res.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));

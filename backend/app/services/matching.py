@@ -5,7 +5,7 @@ from celery_app import celery
 from sqlalchemy.orm import Session
 
 from app.crud.match import create_daily_match, delete_matches_for_date
-from app.db.models import LandlordPreferences, Listing, RenterPreferences
+from app.db.models import Listing, RenterPreferences
 from app.db.session import SessionLocal
 from app.core.config import settings
 from app.utils.match import compute_compatibility_score
@@ -33,10 +33,6 @@ def compute_daily_matches():
     renters = db.query(RenterPreferences).all()
     listings = db.query(Listing).all()
 
-    landlord_pref_map = {
-        lp.user_id: lp for lp in db.query(LandlordPreferences).all()
-    }
-
     for renter_pref in renters:
         ranked = []
         
@@ -50,8 +46,6 @@ def compute_daily_matches():
                     similar_users_data.append({'saved_listing_id': listing_id})
         
         for listing in listings:
-            landlord_pref = landlord_pref_map.get(listing.landlord_id)
-            
             if smart_matcher:
                 # AI-enhanced matching
                 user_behavior = compute_user_behavior_features(
@@ -60,14 +54,14 @@ def compute_daily_matches():
                 
                 score, explanation = smart_matcher.compute_enhanced_score(
                     renter_pref,
-                    landlord_pref,
+                    None,
                     listing,
                     user_behavior=user_behavior,
                     similar_users_prefs=similar_users_data
                 )
             else:
                 # Fallback to rule-based
-                score = compute_compatibility_score(renter_pref, landlord_pref, listing)
+                score = compute_compatibility_score(renter_pref, None, listing)
                 explanation = {"base_score": score}
             
             ranked.append((listing.id, score, explanation))

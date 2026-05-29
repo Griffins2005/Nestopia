@@ -33,16 +33,22 @@ class RenterPreferencesIn(BaseModel):
     bedrooms: int = 1
     bathrooms: int = 1
     household_size: int = Field(default=1, ge=1)
-    locations: List[str] = Field(default_factory=list)
-    move_in_date: str = "Flexible"
-    lease_length: int = 12
+    household: Optional[int] = None
+    locations: List[Any] = Field(default_factory=list)
+    move_in_date: Optional[str] = "Flexible"
+    move_in: Optional[str] = None
+    lease_length: Any = 12
     amenities: List[str] = Field(default_factory=list)
     building_amenities: List[str] = Field(default_factory=list)
-    pets_allowed: bool = True
+    pets_allowed: Optional[bool] = True
+    pets: Optional[str] = None
     smoking_preference: Optional[str] = None
     noise_tolerance: Optional[str] = None
     visitor_flexibility: Optional[str] = None
     custom_preferences: List[str] = Field(default_factory=list)
+
+    class Config:
+        extra = "ignore"
 
 class RenterPreferencesOut(RenterPreferencesIn):
     id: int
@@ -55,6 +61,9 @@ class LandlordPreferencesIn(BaseModel):
     lease_length: Optional[int] = None
     pets_allowed: Optional[bool] = True
     custom_requirements: List[str] = Field(default_factory=list)
+
+    class Config:
+        extra = "ignore"
 
 class LandlordPreferencesOut(LandlordPreferencesIn):
     id: int
@@ -69,12 +78,15 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     about: Optional[str] = None
     phone: Optional[str] = None
+    contact_preference: str = "any"
     location: Optional[str] = None
     profilePicture: Optional[str] = None
     wallet_address: Optional[str] = None
     renter_preferences: Optional[Any] = None
     landlord_preferences: Optional[Any] = None
-    created_at: datetime 
+    auth_method: str = "email"
+    totp_enabled: bool = False
+    created_at: datetime
     class Config:
         orm_mode = True
 
@@ -82,6 +94,7 @@ class UserUpdateIn(BaseModel):
     name: Optional[str] = None
     about: Optional[str] = None
     phone: Optional[str] = None
+    contact_preference: Optional[str] = None
     location: Optional[str] = None
     profilePicture: Optional[str] = None
     documents: Optional[List[str]] = None

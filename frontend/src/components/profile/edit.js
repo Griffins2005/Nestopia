@@ -1,6 +1,6 @@
 //src/components/profile/edit.js 
 import React, { useState, useRef, useContext, useEffect } from "react";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 import avatar from "../../images/avatar.png";
 import AuthContext from "../../context/authContext";
 import { FiMapPin, FiCheckCircle, FiNavigation } from "react-icons/fi";
@@ -122,11 +122,8 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await axios.post("/api/users/upload-profile-doc", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${user.accessToken}`,
-        },
+      const res = await api.post("/api/users/upload-profile-doc", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       return res.data.file_url;
     } catch (e) {
@@ -168,10 +165,9 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
       }
     }
     try {
-      const res = await axios.patch(
+      const res = await api.patch(
         "/api/users/me",
         { name, about, phone, location, profilePicture: fileUrl },
-        { headers: { Authorization: `Bearer ${user.accessToken}` } }
       );
       await refreshProfile?.();
       onSave(res.data);

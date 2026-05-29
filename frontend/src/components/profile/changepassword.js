@@ -1,6 +1,6 @@
 // src/components/profile/changePassword.js
 import React, { useState, useContext } from "react";
-import axios from "axios";
+import api from "../../api/axiosConfig";
 import AuthContext from "../../context/authContext";
 
 export default function ChangePasswordForm({ user, onDone }) {
@@ -28,11 +28,10 @@ export default function ChangePasswordForm({ user, onDone }) {
     setError("");
     setSaving(true);
     try {
-      await axios.post(
-        "/api/users/change-password",
-        { current_password: current, new_password: newPass },
-        { headers: { Authorization: `Bearer ${user.accessToken}` } }
-      );
+      await api.post("/api/users/change-password", {
+        current_password: current,
+        new_password: newPass,
+      });
       setMsg("✅ Password changed. Please log in again.");
       setTimeout(() => {
         logout();
