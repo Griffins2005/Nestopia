@@ -1,10 +1,11 @@
 // src/pages/listings.js
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import axios from "axios";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiGrid, FiMap } from "react-icons/fi";
 
 import AuthContext from "../context/authContext";
 import ListingCard from "../components/listings/listingCard";
+import ListingsMap from "../components/listings/ListingsMap";
 
 export default function ListingsPage() {
   const { user } = useContext(AuthContext);
@@ -21,20 +22,15 @@ export default function ListingsPage() {
   useEffect(() => {
     setLoading(true);
     const params = viewAsRenter ? { view_as_renter: true } : {};
-    const headers = user?.accessToken 
+    const headers = user?.accessToken
       ? { Authorization: `Bearer ${user.accessToken}` }
       : {};
-    
+
     axios
-      .get("/api/listings/", {
-        headers,
-        params,
-      })
+      .get("/api/listings/", { headers, params })
       .then((res) => setListings(res.data || []))
       .catch((err) => {
         if (err.response?.status === 401) {
-          // If auth is required but user isn't logged in, allow viewing without auth
-          // This shouldn't happen with optional auth, but handle gracefully
           axios
             .get("/api/listings/", { params })
             .then((res) => setListings(res.data || []))
@@ -81,9 +77,7 @@ export default function ListingsPage() {
         <div className="listings-hero-text">
           <p className="eyebrow">Curated for you</p>
           <h1>
-            {isLandlord && !viewAsRenter
-              ? "My Listings"
-              : "Available Listings"}
+            {isLandlord && !viewAsRenter ? "My Listings" : "Available Listings"}
           </h1>
           <p>
             {isLandlord && !viewAsRenter
@@ -95,9 +89,8 @@ export default function ListingsPage() {
           {showViewAsRenterToggle && (
             <div className="view-as-renter-toggle">
               <button
-                className={`toggle-btn ${viewAsRenter ? "active" : ""}`}
+                className={`toggle-btn${viewAsRenter ? " active" : ""}`}
                 onClick={() => setViewAsRenter(!viewAsRenter)}
-                title={viewAsRenter ? "View as landlord" : "View as renter"}
               >
                 {viewAsRenter ? "View My Listings" : "Browse All Listings"}
               </button>
@@ -115,26 +108,32 @@ export default function ListingsPage() {
             <button
               className={view === "grid" ? "active" : ""}
               onClick={() => setView("grid")}
+              title="Grid view"
             >
-              Grid
+              <FiGrid style={{ fontSize: "1rem" }} />
             </button>
             <button
               className={view === "map" ? "active" : ""}
               onClick={() => setView("map")}
-              disabled
+              title="Map view"
             >
-              Map
+              <FiMap style={{ fontSize: "1rem" }} />
             </button>
           </div>
         </div>
       </section>
 
       {loading ? (
-        <div className="card-surface">Loading listings...</div>
+        <div className="card-surface" style={{ textAlign: "center", padding: "2rem" }}>
+          Loading listings…
+        </div>
+      ) : view === "map" ? (
+        <ListingsMap
+          listings={filteredListings}
+          isRenter={viewAsRenter || !isLandlord}
+        />
       ) : (
-        <div
-          className={`listings-grid ${view === "map" ? "listings-grid--map" : ""}`}
-        >
+        <div className="listings-grid">
           {filteredListings.length === 0 ? (
             <div className="card-surface empty-state">
               No listings found. Try adjusting your search.

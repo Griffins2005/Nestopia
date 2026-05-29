@@ -13,6 +13,7 @@ import ProfilePage from "./pages/profile";
 import ListingsPage from "./pages/listings";
 import EditListingPage from "./components/listings/edit";
 import ListingDetailsPage from "./components/listings/details";
+import MatchesPage from "./pages/matches";
 import RequireAuth from "./components/RequireAuth";
 
 function LoginWrapper() {
@@ -55,6 +56,14 @@ export default function App() {
               element={
                 <RequireAuth>
                   <ProfilePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/matches"
+              element={
+                <RequireAuth>
+                  <MatchesPage />
                 </RequireAuth>
               }
             />
