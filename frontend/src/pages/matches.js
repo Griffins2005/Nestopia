@@ -1,76 +1,53 @@
-// src/pages/matches.js
-import React, { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FiStar } from "react-icons/fi";
-import AuthContext from "../context/authContext";
-import { getDailyMatches } from "../api/matches";
-import ListingCard from "../components/listings/listingCard";
-import house from "../images/default-house.png";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Icon } from '../components/Icons';
+import ListingCard from '../components/listings/listingCard';
+import { useNestopia } from '../context/NestopiaContext';
+import { getDailyMatches } from '../api/matches';
 
-export default function MatchesPage() {
-  const { user } = useContext(AuthContext);
+export default function Matches() {
   const navigate = useNavigate();
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { user, listings, savedIds, preferences, toggleSave } = useNestopia();
 
-  const isRenter = user?.role === "renter";
+  const [ranked, setRanked] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isRenter) {
+    if (!user?.accessToken) {
+      setRanked(listings.map(l => ({ ...l, match_score: 0 })));
       setLoading(false);
       return;
     }
-    setLoading(true);
     getDailyMatches()
-      .then((res) => {
-        setMatches(res.data || []);
+      .then(res => {
+        const data = res.data || [];
+        const normalized = data.map(l => ({
+          ...l,
+          image: l.images?.[0] || l.image || '/assets/default-house.png',
+          match_score: l.match_score || 0,
+          amenities: l.amenities || [],
+          host: l.host || { name: 'Host', since: '2024', email: '', phone: '' },
+        }));
+        setRanked(normalized.sort((a, b) => b.match_score - a.match_score));
         setLoading(false);
       })
       .catch(() => {
-        setError("Could not load your matches. Please try again later.");
+        setRanked(listings.map(l => ({ ...l, match_score: 0 })));
         setLoading(false);
       });
-  }, [isRenter]);
+  }, [user?.accessToken, listings]);
 
-  const hasPreferences = Boolean(user?.renter_preferences);
-  const topMatch = matches[0];
-  const restMatches = matches.slice(1);
+  const top = ranked[0];
+  const displayName = user?.name || user?.email?.split('@')[0] || 'you';
 
-  // Landlord view
-  if (!isRenter) {
+  if (loading) {
     return (
       <div className="listings-shell">
         <section className="matches-hero">
           <div>
-            <p className="eyebrow">Compatibility</p>
-            <h1>Tenant Matches</h1>
-            <p>
-              As a landlord, your listings are matched to renters whose preferences
-              align with your property. Set your tenant preferences to improve
-              match quality.
-            </p>
+            <p className="eyebrow">Loading your matches…</p>
           </div>
-          <Link to="/profile" className="cta-btn">
-            Update preferences
-          </Link>
         </section>
-        <div className="matches-prompt">
-          <div className="matches-prompt-icon">
-            <FiStar />
-          </div>
-          <div>
-            <h3>How matching works</h3>
-            <p>
-              Our AI compares your listing details with renter preferences — budget,
-              bedrooms, amenities, and lifestyle. High-match renters get your
-              listings surfaced first in their daily feed.
-            </p>
-          </div>
-          <Link to="/listings" className="cta-btn">
-            View my listings
-          </Link>
-        </div>
       </div>
     );
   }
@@ -79,137 +56,67 @@ export default function MatchesPage() {
     <div className="listings-shell">
       <section className="matches-hero">
         <div>
-          <p className="eyebrow">Daily picks</p>
-          <h1>Your Matches</h1>
+          <p className="eyebrow">Curated for {displayName.split(' ')[0]}</p>
+          <h1>Your matches today</h1>
           <p>
-            Homes curated for your budget, location, and lifestyle — refreshed
-            every day.
+            {preferences
+              ? "Scored against your budget, neighborhoods, and must-haves. Refreshed every morning."
+              : "Set your preferences and we'll rank every home by how well it fits you."}
           </p>
         </div>
-        {!hasPreferences && (
-          <Link to="/profile" className="cta-btn">
-            Set preferences to improve matches
-          </Link>
-        )}
+        <button className="cta-btn ghost" onClick={() => navigate('/preferences')}>
+          <Icon name="pen" /> {preferences ? "Edit preferences" : "Set preferences"}
+        </button>
       </section>
 
-      {!hasPreferences && (
+      {!preferences && (
         <div className="matches-prompt">
-          <div className="matches-prompt-icon">
-            <FiStar />
-          </div>
+          <div className="matches-prompt-icon"><Icon name="sparkles" /></div>
           <div>
-            <h3>Set your preferences</h3>
-            <p>
-              Tell us your budget, move-in date, and must-haves so we can surface
-              the listings that actually feel like home.
-            </p>
+            <h3>Tell us your vibe first</h3>
+            <p>Two minutes of preferences unlocks personalized match scores on every listing.</p>
           </div>
-          <Link to="/profile" className="cta-btn">
-            Set preferences
-          </Link>
+          <button className="cta-btn" onClick={() => navigate('/preferences')}>Set preferences <Icon name="arrow-right" /></button>
         </div>
       )}
 
-      {loading && (
-        <div className="card-surface" style={{ textAlign: "center", padding: "2rem" }}>
-          Finding your best matches…
-        </div>
-      )}
-
-      {error && (
-        <div className="form-error">{error}</div>
-      )}
-
-      {!loading && !error && matches.length === 0 && (
-        <div className="empty-shelf">
-          <div className="empty-shelf-icon">
-            <FiStar />
+      {preferences && top && (
+        <article className="top-match" onClick={() => navigate(`/listing/${top.id}`)}>
+          <div className="top-match-img" style={{ backgroundImage: `url(${top.image})` }}>
+            <span className="top-match-badge">{Math.round((top.match_score || 0) * 100)}% match · your top home</span>
           </div>
-          <h3>No matches yet</h3>
-          <p>
-            {hasPreferences
-              ? "We couldn't find listings that match your preferences right now. Check back tomorrow — new homes are added daily."
-              : "Set your renting preferences so we can find the right homes for you."}
-          </p>
-          <Link to={hasPreferences ? "/listings" : "/profile"} className="cta-btn">
-            {hasPreferences ? "Browse all listings" : "Set preferences"}
-          </Link>
-        </div>
-      )}
-
-      {!loading && !error && topMatch && (
-        <>
-          <div
-            className="top-match"
-            onClick={() => navigate(`/listing/${topMatch.listing_id || topMatch.id}`)}
-          >
-            <div
-              className="top-match-img"
-              style={{
-                backgroundImage: `url(${(topMatch.images && topMatch.images[0]) || house})`,
-              }}
-            >
-              <div className="top-match-badge">
-                {Math.round((topMatch.compatibility_score || topMatch.match_score || 0) * 100)}% Match
-              </div>
+          <div className="top-match-body">
+            <p className="lc-sub" style={{ color: "var(--ntp-green-500)", margin: "0 0 0.2rem", fontWeight: 500 }}>{top.location}</p>
+            <h2>{top.title}</h2>
+            <p className="top-match-desc">{top.description}</p>
+            <div className="listing-card-meta" style={{ marginBottom: "0.4rem" }}>
+              <span>{top.bedrooms === 0 ? "Studio" : `${top.bedrooms} beds`}</span>
+              <span>{top.bathrooms} baths</span>
+              {top.sqft && <span>{top.sqft} sqft</span>}
             </div>
-            <div className="top-match-body">
-              <p className="eyebrow soft" style={{ marginBottom: "0.4rem" }}>
-                Top pick for today
-              </p>
-              <h2>{topMatch.title}</h2>
-              <p className="top-match-desc">
-                {topMatch.description
-                  ? topMatch.description.slice(0, 160) + (topMatch.description.length > 160 ? "…" : "")
-                  : topMatch.location}
-              </p>
-              <div className="top-match-foot">
-                <span className="top-match-price">
-                  ${(topMatch.rent_price || 0).toLocaleString()}
-                  <small>/mo</small>
-                </span>
-                <Link
-                  to={`/listing/${topMatch.listing_id || topMatch.id}`}
-                  className="cta-btn"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View details
-                </Link>
-              </div>
+            <div className="top-match-foot">
+              <span className="top-match-price">${top.rent_price?.toLocaleString()}<small>/mo</small></span>
+              <button className="cta-btn" onClick={(e) => { e.stopPropagation(); navigate(`/listing/${top.id}`); }}>View home</button>
             </div>
           </div>
-
-          {restMatches.length > 0 && (
-            <>
-              <div className="matches-list-head">
-                <h2>More great fits</h2>
-              </div>
-              <div className="listings-grid">
-                {restMatches.map((m) => (
-                  <ListingCard
-                    key={m.listing_id || m.id}
-                    listing={{
-                      id: m.listing_id || m.id,
-                      title: m.title,
-                      location: m.location,
-                      rent_price: m.rent_price,
-                      match_score: m.compatibility_score || m.match_score,
-                      amenities: m.amenities || [],
-                      images: m.images || [],
-                      bedrooms: m.bedrooms,
-                      bathrooms: m.bathrooms,
-                      sqft: m.sqft,
-                    }}
-                    userRole="renter"
-                    initiallySaved={false}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </>
+        </article>
       )}
+
+      <div className="matches-list-head">
+        <h2>{preferences ? "More homes ranked for you" : "All available homes"}</h2>
+      </div>
+      <div className="listings-grid">
+        {ranked.slice(preferences ? 1 : 0).map((listing) => (
+          <ListingCard
+            key={listing.id}
+            listing={listing}
+            isRenter={true}
+            isSaved={savedIds.includes(listing.id)}
+            onSelect={(l) => navigate(`/listing/${l.id}`)}
+            onToggleSave={toggleSave}
+          />
+        ))}
+      </div>
     </div>
   );
 }

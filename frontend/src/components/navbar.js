@@ -1,218 +1,83 @@
-//src/components/navbar.js
-import React, { useContext, useRef, useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import AuthContext from "../context/authContext";
-import {
-  FaSearch,
-  FaCompass,
-  FaRegHeart,
-  FaUserCircle,
-  FaBars,
-  FaTimes,
-  FaStar,
-} from "react-icons/fa";
-import logo from "../images/nestopia-logo.png";
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Icon, RegIcon } from './Icons';
+import { useNestopia } from '../context/NestopiaContext';
 
 export default function Navbar() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, flashToast } = useNestopia();
   const navigate = useNavigate();
-  const searchRef = useRef(null);
+  const location = useLocation();
+  const [q, setQ] = useState('');
 
-  // Mobile drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerRef = useRef(null);
-
-  // Handle search (used in both desktop and drawer)
-  const handleSearch = (e) => {
+  const submit = (e) => {
     e.preventDefault();
-    const q = searchRef.current.value.trim();
-    if (q) {
-      navigate(`/explore?q=${encodeURIComponent(q)}`);
-      setDrawerOpen(false);
-    }
+    navigate(`/listings${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`);
   };
 
-  // Navigation helpers
-  const handleLogout = (e) => {
-    e.preventDefault();
-    logout();
-    setDrawerOpen(false);
-    navigate("/");
-  };
-
-  const buildAuthState = (targetPath) =>
-    !user
-      ? {
-          from: {
-            pathname: targetPath,
-          },
-        }
-      : undefined;
-
-  // Drawer accessibility: close on ESC or outside click
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const handleKey = (e) => {
-      if (e.key === "Escape") setDrawerOpen(false);
-    };
-    const handleClick = (e) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
-        setDrawerOpen(false);
-      }
-    };
-    document.addEventListener("keydown", handleKey);
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [drawerOpen]);
+  const handleLogout = () => { logout(); flashToast('Signed out.'); };
+  const iconCls = (path) => `navbar-ntp-icon${location.pathname === path ? ' active' : ''}`;
 
   return (
-    <>
-      <nav className="navbar-ntp">
-        {/* Hamburger - Mobile only */}
-        <button
-          className="navbar-ntp-hamburger"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open menu"
-        >
-          <FaBars />
-        </button>
-
-        {/* LEFT: Logo */}
-        <div
-          className="navbar-ntp-left"
-          tabIndex={0}
-          onClick={() => navigate("/")}
-          onKeyPress={e => e.key === "Enter" && navigate("/")}
-        >
-          <img
-            src={logo}
-            alt="Nestopia Logo"
-            className="navbar-ntp-logo"
-          />
-          <span className="navbar-ntp-title">Nestopia</span>
-        </div>
-
-        {/* CENTER: Search Bar (desktop only) */}
-        <div className="navbar-ntp-center">
-          <form onSubmit={handleSearch} className="navbar-ntp-search-form" role="search">
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search homes, apartments…"
-              className="navbar-ntp-search"
-              aria-label="Search homes or apartments"
-            />
-            <button type="submit" className="navbar-ntp-search-btn" aria-label="Search">
-              <FaSearch />
-            </button>
-          </form>
-        </div>
-
-        {/* RIGHT: Action Icons (desktop only) */}
-        <div className="navbar-ntp-right">
-          <Link to="/listings" className="navbar-ntp-icon" title="Explore" aria-label="Explore listings">
-            <FaCompass />
-          </Link>
-          {user?.role === "renter" && (
-            <Link
-              to="/matches"
-              className="navbar-ntp-icon"
-              title="My Matches"
-              aria-label="My Matches"
-            >
-              <FaStar />
-            </Link>
-          )}
-          <Link
-            to={user ? "/saved" : "/login"}
-            state={buildAuthState("/saved")}
-            className="navbar-ntp-icon"
-            title="Saved Listings"
-            aria-label="Saved Listings"
-          >
-            <FaRegHeart />
-          </Link>
-          <Link
-            to={user ? "/profile" : "/login"}
-            state={buildAuthState("/profile")}
-            className="navbar-ntp-icon"
-            title={user ? "Profile" : "Login"}
-            aria-label={user ? "Profile" : "Login"}
-          >
-            <FaUserCircle />
-          </Link>
-          {user && (
-            <button className="navbar-ntp-logout" onClick={handleLogout} aria-label="Log out of your account" title="Logout">
-              Logout
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* MOBILE DRAWER */}
-      <div className={`navbar-ntp-drawer-backdrop${drawerOpen ? " open" : ""}`}></div>
-      <aside
-        className={`navbar-ntp-drawer${drawerOpen ? " open" : ""}`}
-        ref={drawerRef}
-        aria-modal="true"
-        role="dialog"
-        tabIndex={-1}
+    <nav className="navbar-ntp">
+      <div
+        className="navbar-ntp-left"
+        onClick={() => navigate('/')}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && navigate('/')}
       >
-        <button
-          className="navbar-ntp-drawer-close"
-          onClick={() => setDrawerOpen(false)}
-          aria-label="Close menu"
-        >
-          <FaTimes />
-        </button>
-        <div className="navbar-ntp-drawer-logo" onClick={() => {navigate("/"); setDrawerOpen(false);}}>
-          <img src={logo} alt="Nestopia Logo" />
-          <span>Nestopia</span>
-        </div>
-        <form onSubmit={handleSearch} className="navbar-ntp-drawer-search">
+        <span className="navbar-ntp-logo">
+          <img src="/assets/nestopia-logo.png" alt="Nestopia" />
+        </span>
+        <span className="navbar-ntp-title">Nestopia</span>
+      </div>
+
+      <div className="navbar-ntp-center">
+        <form className="navbar-ntp-search-form" onSubmit={submit} role="search">
           <input
-            ref={searchRef}
-            type="text"
+            className="navbar-ntp-search"
             placeholder="Search homes, apartments…"
-            aria-label="Search homes or apartments"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            aria-label="Search"
           />
-          <button type="submit" aria-label="Search">
-            <FaSearch />
+          <button type="submit" className="navbar-ntp-search-btn" aria-label="Search">
+            <Icon name="magnifying-glass" />
           </button>
         </form>
-        <nav className="navbar-ntp-drawer-links">
-          <Link to="/listings" onClick={() => setDrawerOpen(false)}>
-            <FaCompass /> Explore
+      </div>
+
+      <div className="navbar-ntp-right">
+        <Link to="/listings" className={iconCls('/listings')} title="Explore">
+          <Icon name="compass" />
+        </Link>
+
+        {(!user || user.role === 'renter') && (
+          <Link to={user ? '/matches' : '/login'} className={iconCls('/matches')} title="Your matches">
+            <Icon name="sparkles" />
           </Link>
-          {user?.role === "renter" && (
-            <Link to="/matches" onClick={() => setDrawerOpen(false)}>
-              <FaStar /> My Matches
-            </Link>
-          )}
-          <Link
-            to={user ? "/saved" : "/login"}
-            state={buildAuthState("/saved")}
-            onClick={() => setDrawerOpen(false)}
-          >
-            <FaRegHeart /> Saved
+        )}
+
+        {user?.role === 'landlord' && (
+          <Link to="/listing/new" className={iconCls('/listing/new')} title="Add listing">
+            <Icon name="plus" />
           </Link>
-          <Link
-            to={user ? "/profile" : "/login"}
-            state={buildAuthState("/profile")}
-            onClick={() => setDrawerOpen(false)}
-          >
-            <FaUserCircle /> {user ? "Profile" : "Login"}
-          </Link>
-          {user && (
-            <button className="navbar-ntp-drawer-logout" onClick={handleLogout}>
-              Logout
-            </button>
-          )}
-        </nav>
-      </aside>
-    </>
+        )}
+
+        <Link to={user ? '/saved' : '/login'} className={iconCls('/saved')} title="Saved">
+          <RegIcon name="heart" />
+        </Link>
+
+        <Link to={user ? '/profile' : '/login'} className={iconCls('/profile')} title={user ? 'Profile' : 'Login'}>
+          <Icon name="circle-user" />
+        </Link>
+
+        {user && (
+          <button className="navbar-ntp-icon logout" title="Sign out" onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <Icon name="sign-out" />
+          </button>
+        )}
+      </div>
+    </nav>
   );
 }

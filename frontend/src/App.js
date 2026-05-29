@@ -1,84 +1,77 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/authContext";
+import { NestopiaProvider, useNestopia } from "./context/NestopiaContext";
 
-import Home from "./pages/home";
-import LoginForm from "./components/auth/loginform";
-import SignupForm from "./components/auth/signupform";
-import SavedListingsPage from "./components/listings/saved";
 import Navbar from "./components/navbar";
+import Home from "./pages/home";
+import Login from "./pages/login";
+import Listings from "./pages/listings";
+import ListingDetail from "./pages/listingDetail";
+import ListingForm from "./pages/listingForm";
+import Matches from "./pages/matches";
+import Saved from "./pages/saved";
+import Preferences from "./pages/preferences";
+import Profile from "./pages/profile";
 import OAuthCallback from "./pages/oauthCallback";
-import OnboardingPage from "./pages/onboarding";
-import ProfilePage from "./pages/profile";
-import ListingsPage from "./pages/listings";
-import EditListingPage from "./components/listings/edit";
-import ListingDetailsPage from "./components/listings/details";
-import MatchesPage from "./pages/matches";
-import RequireAuth from "./components/RequireAuth";
+import Onboarding from "./pages/onboarding";
 
-function LoginWrapper() {
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const expired = params.get("expired") === "1";
-  return <LoginForm sessionExpired={expired} />;
+function Toast() {
+  const { toast } = useNestopia();
+  if (!toast) return null;
+  return (
+    <div style={{
+      position: "fixed", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)",
+      background: "var(--ntp-green-700, #0f5f42)", color: "#fff",
+      padding: "0.6rem 1.4rem", borderRadius: "2rem", fontSize: "0.95rem",
+      fontWeight: 600, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+      pointerEvents: "none",
+    }}>
+      {toast}
+    </div>
+  );
+}
+
+function RequireAuth({ children }) {
+  const { user } = useNestopia();
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function AppInner() {
+  return (
+    <>
+      <Navbar />
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Login />} />
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/listing/:id" element={<ListingDetail />} />
+          <Route path="/listing/new" element={<RequireAuth><ListingForm /></RequireAuth>} />
+          <Route path="/listing/edit/:id" element={<RequireAuth><ListingForm /></RequireAuth>} />
+          <Route path="/matches" element={<RequireAuth><Matches /></RequireAuth>} />
+          <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
+          <Route path="/preferences" element={<RequireAuth><Preferences /></RequireAuth>} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+          <Route path="/oauth-callback" element={<OAuthCallback />} />
+          <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+      <Toast />
+    </>
+  );
 }
 
 export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <Navbar />
-        <div className="app-container">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<LoginWrapper />} />
-            <Route path="/signup" element={<SignupForm />} />
-            <Route path="/listings" element={<ListingsPage />} />
-            <Route
-              path="/saved"
-              element={
-                <RequireAuth>
-                  <SavedListingsPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/listing/edit/:id"
-              element={
-                <RequireAuth>
-                  <EditListingPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="/listing/:id" element={<ListingDetailsPage />} />
-            <Route
-              path="/profile"
-              element={
-                <RequireAuth>
-                  <ProfilePage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/matches"
-              element={
-                <RequireAuth>
-                  <MatchesPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="/oauth-callback" element={<OAuthCallback />} />
-            <Route
-              path="/onboarding"
-              element={
-                <RequireAuth>
-                  <OnboardingPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
+        <NestopiaProvider>
+          <AppInner />
+        </NestopiaProvider>
       </AuthProvider>
     </Router>
   );

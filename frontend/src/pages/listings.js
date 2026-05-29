@@ -1,75 +1,37 @@
-// src/pages/listings.js
-import React, { useState, useEffect, useContext, useMemo } from "react";
-import axios from "axios";
-import { FiSearch, FiGrid, FiMap } from "react-icons/fi";
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Icon } from '../components/Icons';
+import ListingCard from '../components/listings/listingCard';
+import ListingsMap from '../components/ListingsMap';
+import { useNestopia } from '../context/NestopiaContext';
 
-import AuthContext from "../context/authContext";
-import ListingCard from "../components/listings/listingCard";
-import ListingsMap from "../components/listings/ListingsMap";
+export default function Listings() {
+  const { user, listings, savedIds, toggleSave } = useNestopia();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
 
-export default function ListingsPage() {
-  const { user } = useContext(AuthContext);
-  const [listings, setListings] = useState([]);
-  const [savedIds, setSavedIds] = useState([]);
-  const [view, setView] = useState("grid");
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
+  const [view, setView] = useState('grid');
   const [viewAsRenter, setViewAsRenter] = useState(false);
 
-  const isLandlord = user?.role === "landlord";
+  useEffect(() => { setQuery(searchParams.get('q') || ''); }, [searchParams]);
+
+  const isLandlord = user?.role === 'landlord';
   const showViewAsRenterToggle = isLandlord;
+  const treatAsRenter = !user || user.role === 'renter' || (isLandlord && viewAsRenter);
 
-  useEffect(() => {
-    setLoading(true);
-    const params = viewAsRenter ? { view_as_renter: true } : {};
-    const headers = user?.accessToken
-      ? { Authorization: `Bearer ${user.accessToken}` }
-      : {};
-
-    axios
-      .get("/api/listings/", { headers, params })
-      .then((res) => setListings(res.data || []))
-      .catch((err) => {
-        if (err.response?.status === 401) {
-          axios
-            .get("/api/listings/", { params })
-            .then((res) => setListings(res.data || []))
-            .catch(() => setListings([]));
-        } else {
-          setListings([]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [user, viewAsRenter]);
-
-  useEffect(() => {
-    if (user?.role === "renter" || (user?.role === "landlord" && viewAsRenter)) {
-      axios
-        .get("/api/listings/saved/", {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        })
-        .then((res) =>
-          setSavedIds(
-            res.data
-              .map((item) => item.listing?.id || item.listing_id || item.id)
-              .filter(Boolean)
-          )
-        )
-        .catch(() => setSavedIds([]));
-    } else {
-      setSavedIds([]);
+  const filtered = useMemo(() => {
+    let base = listings;
+    if (isLandlord && !viewAsRenter && user?.email) {
+      base = listings.filter((l) => l.host?.email === user.email || l.landlord_id === user.id);
     }
-  }, [user, viewAsRenter]);
-
-  const filteredListings = useMemo(() => {
-    if (!query.trim()) return listings;
-    const lower = query.toLowerCase();
-    return listings.filter((listing) => {
-      const title = listing.title?.toLowerCase() || "";
-      const location = listing.location?.toLowerCase() || "";
-      return title.includes(lower) || location.includes(lower);
-    });
-  }, [listings, query]);
+    if (!query.trim()) return base;
+    const q = query.toLowerCase();
+    return base.filter(
+      (l) => l.title?.toLowerCase().includes(q) || l.location?.toLowerCase().includes(q)
+    );
+  }, [listings, query, isLandlord, viewAsRenter, user?.email, user?.id]);
 
   return (
     <div className="listings-shell">
@@ -87,17 +49,15 @@ export default function ListingsPage() {
         </div>
         <div className="listings-hero-controls">
           {showViewAsRenterToggle && (
-            <div className="view-as-renter-toggle">
-              <button
-                className={`toggle-btn${viewAsRenter ? " active" : ""}`}
-                onClick={() => setViewAsRenter(!viewAsRenter)}
-              >
-                {viewAsRenter ? "View My Listings" : "Browse All Listings"}
-              </button>
-            </div>
+            <button
+              className={`toggle-btn ${viewAsRenter ? "active" : ""}`}
+              onClick={() => setViewAsRenter(!viewAsRenter)}
+            >
+              {viewAsRenter ? "View My Listings" : "Browse All Listings"}
+            </button>
           )}
           <div className="search-bar">
-            <FiSearch />
+            <Icon name="magnifying-glass" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -105,50 +65,42 @@ export default function ListingsPage() {
             />
           </div>
           <div className="view-toggle">
-            <button
-              className={view === "grid" ? "active" : ""}
-              onClick={() => setView("grid")}
-              title="Grid view"
-            >
-              <FiGrid style={{ fontSize: "1rem" }} />
-            </button>
-            <button
-              className={view === "map" ? "active" : ""}
-              onClick={() => setView("map")}
-              title="Map view"
-            >
-              <FiMap style={{ fontSize: "1rem" }} />
-            </button>
+            <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")}>Grid</button>
+            <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>Map</button>
           </div>
+          {user?.role === "landlord" && !viewAsRenter && (
+            <button className="cta-btn" onClick={() => navigate('/listing/new')}>
+              <Icon name="plus" /> Add listing
+            </button>
+          )}
         </div>
       </section>
 
-      {loading ? (
-        <div className="card-surface" style={{ textAlign: "center", padding: "2rem" }}>
-          Loading listings…
-        </div>
-      ) : view === "map" ? (
-        <ListingsMap
-          listings={filteredListings}
-          isRenter={viewAsRenter || !isLandlord}
-        />
-      ) : (
+      {view === "grid" ? (
         <div className="listings-grid">
-          {filteredListings.length === 0 ? (
-            <div className="card-surface empty-state">
-              No listings found. Try adjusting your search.
+          {filtered.length === 0 ? (
+            <div className="listing-card" style={{ padding: "2rem", color: "var(--ntp-fg-muted)" }}>
+              {isLandlord && !viewAsRenter
+                ? 'You haven\'t published any listings yet. Click "Add listing" to get started.'
+                : "No listings found. Try adjusting your search."}
             </div>
-          ) : (
-            filteredListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                userRole={viewAsRenter || !user ? "renter" : user?.role}
-                initiallySaved={savedIds.includes(listing.id)}
-              />
-            ))
-          )}
+          ) : filtered.map((listing) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              isRenter={treatAsRenter}
+              isSaved={savedIds.includes(listing.id)}
+              onSelect={(l) => navigate(`/listing/${l.id}`)}
+              onToggleSave={toggleSave}
+            />
+          ))}
         </div>
+      ) : (
+        <ListingsMap
+          listings={filtered}
+          isRenter={treatAsRenter}
+          onSelect={(l) => navigate(`/listing/${l.id}`)}
+        />
       )}
     </div>
   );
