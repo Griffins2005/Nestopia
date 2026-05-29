@@ -9,6 +9,7 @@ import {
   FaUserCircle,
   FaBars,
   FaTimes,
+  FaStar,
 } from "react-icons/fa";
 import logo from "../images/nestopia-logo.png";
 
@@ -115,6 +116,16 @@ export default function Navbar() {
           <Link to="/listings" className="navbar-ntp-icon" title="Explore" aria-label="Explore listings">
             <FaCompass />
           </Link>
+          {user?.role === "renter" && (
+            <Link
+              to="/matches"
+              className="navbar-ntp-icon"
+              title="My Matches"
+              aria-label="My Matches"
+            >
+              <FaStar />
+            </Link>
+          )}
           <Link
             to={user ? "/saved" : "/login"}
             state={buildAuthState("/saved")}
@@ -176,6 +187,11 @@ export default function Navbar() {
           <Link to="/listings" onClick={() => setDrawerOpen(false)}>
             <FaCompass /> Explore
           </Link>
+          {user?.role === "renter" && (
+            <Link to="/matches" onClick={() => setDrawerOpen(false)}>
+              <FaStar /> My Matches
+            </Link>
+          )}
           <Link
             to={user ? "/saved" : "/login"}
             state={buildAuthState("/saved")}

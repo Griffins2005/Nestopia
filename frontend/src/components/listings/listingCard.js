@@ -1,4 +1,4 @@
-// src/components/Listings/ListingCard.jsx
+// src/components/listings/listingCard.js
 import React from "react";
 import { Link } from "react-router-dom";
 import SavedButton from "./savedbutton";
@@ -11,10 +11,22 @@ export default function ListingCard({ listing, userRole, initiallySaved }) {
   const img = listing.images?.[0] || house;
   const amenities = (listing.amenities || []).slice(0, 3);
 
+  const bedsLabel =
+    listing.bedrooms === 0
+      ? "Studio"
+      : listing.bedrooms != null
+      ? `${listing.bedrooms} bed${listing.bedrooms !== 1 ? "s" : ""}`
+      : null;
+
   return (
     <div className="listing-card match-card">
       <div className="listing-card-img-row">
-        <img src={img} alt={listing.title} className="listing-img" />
+        <img
+          src={img}
+          alt={listing.title}
+          className="listing-img"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
         {isRenter && matchScore > 0 && (
           <div className="match-label">{matchScore}% Match</div>
         )}
@@ -36,21 +48,21 @@ export default function ListingCard({ listing, userRole, initiallySaved }) {
         </div>
 
         <div className="listing-card-meta">
-          <span>{listing.bedrooms} beds</span>
-          <span>{listing.bathrooms} baths</span>
+          {bedsLabel && <span>{bedsLabel}</span>}
+          {listing.bathrooms != null && <span>{listing.bathrooms} baths</span>}
           {listing.sqft && <span>{listing.sqft} sqft</span>}
         </div>
 
         <div className="listing-card-tags">
-          {amenities.length
-            ? amenities.map((amenity) => (
-                <span key={amenity} className="listing-tag">
-                  {amenity}
-                </span>
-              ))
-            : (
-              <span className="listing-tag muted">Flexible terms</span>
-            )}
+          {amenities.length ? (
+            amenities.map((amenity) => (
+              <span key={amenity} className="listing-tag">
+                {amenity}
+              </span>
+            ))
+          ) : (
+            <span className="listing-tag muted">Flexible terms</span>
+          )}
         </div>
 
         <Link to={`/listing/${listing.id}`} className="listing-card-details-btn">
