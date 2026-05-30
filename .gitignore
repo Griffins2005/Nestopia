@@ -1,8 +1,42 @@
 # Ignore Mac system files
 .DS_Store
 
-# Keep AI matching files local only
+# Keep AI matching notes local only
 AI_MATCHING_SUMMARY.md
 AI_MATCHING_IMPROVEMENTS.md
 
+# Dependencies
 node_modules/
+frontend/node_modules/
+backend/venv/
+backend/.venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+frontend/.env
+backend/.env
+
+# Local databases and uploads
+backend/nestopia_dev.db
+backend/*.sqlite3
+backend/uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Build output
+frontend/build/
+frontend/dist/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

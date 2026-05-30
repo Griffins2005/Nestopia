@@ -4,9 +4,10 @@ __pycache__/
 *.pyo
 *.pyd
 *.sqlite3
+nestopia_dev.db
 .vscode
 g.txt
-app/utils/geo.py
+
 # Virtualenv
 .env
 .venv
@@ -15,12 +16,16 @@ venv/
 # dotenv environment variables
 .env
 .env.*
+!.env.example
 
 # Alembic cache
 alembic/versions/*.pyc
 
 # Logs
 *.log
+
+# Local uploads (use object storage in production)
+uploads/
 
 # OS junk
 .DS_Store

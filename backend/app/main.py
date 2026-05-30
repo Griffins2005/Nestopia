@@ -34,10 +34,7 @@ UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(UPLOADS_DIR)), name="static")
 
-origins = [
-    "http://localhost:3000",
-    # production domains, etc.
-]
+origins = settings.cors_origins_list()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

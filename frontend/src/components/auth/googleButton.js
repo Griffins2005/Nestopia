@@ -1,10 +1,10 @@
 //src/components/auth/googleButton.js
 import React from "react";
+import { API_BASE_URL } from "../../api/getBaseUrl";
 
 export default function GoogleButton({ role, disabled }) {
   const handleGoogleLogin = () => {
-    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-    window.location.href = `${apiBaseUrl}/api/auth/google/login?role=${role}`;
+    window.location.href = `${API_BASE_URL}/api/auth/google/login?role=${role}`;
   };
 
   return (

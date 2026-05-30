@@ -419,15 +419,22 @@ cd frontend && npm test
 
 ## Deployment
 
-**Backend:** `gunicorn -k uvicorn.workers.UvicornWorker app.main:app` behind HTTPS. Set `COOKIE_SECURE=true`.
+This monorepo deploys as **two separate apps**. See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full guide.
 
-**Frontend:** `npm run build` → serve `frontend/build/`. Set `REACT_APP_API_BASE_URL` before building.
+| Part | Directory | Host |
+|------|-----------|------|
+| Frontend | `frontend/` | **Vercel** — set Root Directory to `frontend`, add `REACT_APP_API_BASE_URL` |
+| Backend | `backend/` | **Railway / Render / Fly** — PostgreSQL required; use `backend/Dockerfile` |
 
-**Database:** Managed PostgreSQL; run `alembic upgrade head` on deploy.
+**Production checklist**
 
-**Uploads:** Migrate `uploads/` to object storage (S3, GCS) for production.
+- Backend: `DATABASE_URL`, `SECRET_KEY`, `SESSION_SECRET_KEY`, `FRONTEND_URL`, `CORS_ORIGINS`, `API_PUBLIC_URL`, `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none`
+- Frontend (Vercel): `REACT_APP_API_BASE_URL=https://your-api-host`
+- Google OAuth redirect URI points at the **API** host (`/api/auth/google/callback`)
+- Run `alembic upgrade head` on PostgreSQL
+- Plan object storage for `uploads/` (PaaS disks are ephemeral)
 
-**Workers:** Deploy Celery worker + beat if using daily matching.
+**Not recommended:** deploying the FastAPI backend on Vercel serverless (file uploads, DB, Celery).
 
 ## Security Considerations
 

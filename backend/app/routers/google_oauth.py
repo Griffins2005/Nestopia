@@ -28,7 +28,7 @@ def redirect_to_login(error: str, message: str, role: str = "renter"):
 @router.get("/api/auth/google/login")
 async def login_via_google(request: Request):
     role = request.query_params.get("role", "renter")
-    redirect_uri = settings.GOOGLE_REDIRECT_URI or f"{settings.FRONTEND_URL}/api/auth/google/callback"
+    redirect_uri = settings.google_redirect_uri()
     return await oauth.google.authorize_redirect(request, redirect_uri, state=role)
 
 @router.get("/api/auth/google/callback")

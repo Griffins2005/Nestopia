@@ -115,3 +115,11 @@ src/
 | `REACT_APP_API_BASE_URL` | Production build | API origin (omit in dev — uses proxy) |
 
 Do not commit `.env` with secrets.
+
+## Deploy to Vercel
+
+1. Import the repo in Vercel → set **Root Directory** to `frontend`.
+2. Add environment variable: `REACT_APP_API_BASE_URL` = your deployed API URL (no trailing slash).
+3. Deploy — `vercel.json` handles the CRA build and SPA routing.
+
+The API runs separately (Railway/Render). See [DEPLOYMENT.md](../DEPLOYMENT.md) in the repo root.

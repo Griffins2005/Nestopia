@@ -3,6 +3,7 @@ import { Icon } from '../components/Icons';
 import AuthContext from '../context/authContext';
 import PasswordStrength from '../components/PasswordStrength';
 import { isStrongPassword } from '../api/auth';
+import { API_BASE_URL } from '../api/getBaseUrl';
 
 export default function Login() {
   const { login, signup, verify2fa } = useContext(AuthContext);
@@ -19,7 +20,7 @@ export default function Login() {
   const [totpCode, setTotpCode] = useState("");
 
   const googleLogin = () => {
-    window.location.href = `/api/auth/google/login?role=${role}`;
+    window.location.href = `${API_BASE_URL}/api/auth/google/login?role=${role}`;
   };
 
   const isRenter = role === "renter";
