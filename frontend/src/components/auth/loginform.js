@@ -5,11 +5,13 @@ import axios from "axios";
 import AuthContext from "../../context/authContext";
 import AuthRoleChooser from "./AuthRoleChooser";
 import GoogleButton from "./googleButton";
+import { API_BASE_URL } from "../../api/getBaseUrl";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const authClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:8000",
+  baseURL: API_BASE_URL || "http://localhost:8000",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
 const NETWORK_ERROR_MESSAGE =

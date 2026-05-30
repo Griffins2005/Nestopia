@@ -1,4 +1,5 @@
 import api from './axiosConfig';
+import { API_BASE_URL } from './getBaseUrl';
 
 export function createListing(payload) {
   return api.post('/api/listings/', payload);
@@ -36,12 +37,7 @@ export function uploadListingImage(file) {
 export function listingImageUrl(url) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
-  const base =
-    process.env.REACT_APP_API_BASE_URL !== undefined
-      ? process.env.REACT_APP_API_BASE_URL
-      : process.env.NODE_ENV === 'development'
-        ? ''
-        : '';
+  const base = API_BASE_URL;
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 

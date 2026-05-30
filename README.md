@@ -113,6 +113,8 @@ Use `backend/Dockerfile` + `backend/railway.toml`. Clear custom start commands. 
 REACT_APP_API_BASE_URL=https://nestopia-production.up.railway.app
 ```
 
+Include `https://` — without it, requests incorrectly go to `vercel.app/nestopia-production...` and return **405**.
+
 **Google OAuth** — JavaScript origins: Vercel URL + `http://localhost:3000`. Redirect URI on the **API**: `/api/auth/google/callback`.
 
 ## API overview
