@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListingCard from '../components/listings/listingCard';
 import EmptyState, { ListingsLoading } from '../components/EmptyState';
-import { getSavedEmptyState } from '../api/listings';
+import { getSavedEmptyState, getSavedListings } from '../api/listings';
 import { useNestopia, normalizeListing } from '../context/NestopiaContext';
-import api from '../api/axiosConfig';
 
 export default function Saved() {
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ export default function Saved() {
       return;
     }
     setStatus('loading');
-    api.get('/api/listings/saved/')
+    getSavedListings()
       .then((res) => {
         setSavedListings((res.data || []).map(normalizeListing));
         setStatus('ready');

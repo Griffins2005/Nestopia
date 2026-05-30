@@ -32,6 +32,13 @@ const raw =
 
 export const API_BASE_URL = normalizeApiBaseUrl(raw);
 
+/** Resolve /static/... paths against the API origin (works in dev proxy + production). */
+export function apiAssetUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 if (process.env.NODE_ENV === 'production' && !API_BASE_URL) {
   // eslint-disable-next-line no-console
   console.warn(

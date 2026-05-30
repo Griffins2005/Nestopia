@@ -1,7 +1,10 @@
 // src/context/authContext.js
 import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import api, { setUnauthorizedHandler } from "../api/axiosConfig";
+import { setUnauthorizedHandler } from "../api/axiosConfig";
+import { login as apiLogin, signup as apiSignup, verify2fa as apiVerify2fa, logout as apiLogout } from "../api/auth";
+import { getCurrentUser } from "../api/user";
+import { setRenterPreferences, setLandlordPreferences } from "../api/preferences";
 
 const AuthContext = createContext();
 
@@ -49,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
   const restoreSession = useCallback(async () => {
     try {
-      const userRes = await api.get("/api/users/me");
+      const userRes = await getCurrentUser();
       setAuthenticatedUser(userRes.data);
       return userRes.data;
     } catch {
@@ -83,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   async function login(email, password, role) {
-    const res = await api.post("/api/auth/login", { email, password, role });
+    const res = await apiLogin(email, password, role);
     if (res.data?.requires_2fa) {
       return {
         requires2fa: true,
@@ -96,10 +99,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   async function verify2fa(challengeToken, code) {
-    await api.post("/api/auth/verify-2fa", {
-      challenge_token: challengeToken,
-      code,
-    });
+    await apiVerify2fa(challengeToken, code);
     const userData = await restoreSession();
     routeAfterAuth(userData);
     return userData;
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }) => {
 
   async function logout() {
     try {
-      await api.post("/api/auth/logout");
+      await apiLogout();
     } catch {
       /* cookie may already be gone */
     }
@@ -140,8 +140,11 @@ export const AuthProvider = ({ children }) => {
   }
 
   async function submitPreferences(preferences, role) {
-    const url = role === "renter" ? "/api/preferences/renter" : "/api/preferences/landlord";
-    await api.post(url, preferences);
+    if (role === "renter") {
+      await setRenterPreferences(preferences);
+    } else {
+      await setLandlordPreferences(preferences);
+    }
     await restoreSession();
     navigate("/profile");
   }

@@ -1,47 +1,48 @@
 import api from './axiosConfig';
+import endpoints from './endpoints';
 
 export function getActivityFeed() {
-  return api.get('/api/applications/activity');
+  return api.get(endpoints.applications.activity);
 }
 
 export function applyFromContact(listingId) {
-  return api.post('/api/applications/from-contact', { listing_id: listingId });
+  return api.post(endpoints.applications.fromContact, { listing_id: listingId });
 }
 
 export function withdrawApplication(appId) {
-  return api.post(`/api/applications/${appId}/withdraw`);
+  return api.post(endpoints.applications.withdraw(appId));
 }
 
 export function landlordAcceptApplication(appId) {
-  return api.post(`/api/applications/${appId}/landlord-accept`);
+  return api.post(endpoints.applications.landlordAccept(appId));
 }
 
 export function landlordRejectApplication(appId) {
-  return api.post(`/api/applications/${appId}/landlord-reject`);
+  return api.post(endpoints.applications.landlordReject(appId));
 }
 
 export function tenantConfirmApplication(appId) {
-  return api.post(`/api/applications/${appId}/tenant-confirm`);
+  return api.post(endpoints.applications.tenantConfirm(appId));
 }
 
 export function setApplicationMoveIn(appId, moveInDate) {
-  return api.post(`/api/applications/${appId}/move-in`, { move_in_date: moveInDate });
+  return api.post(endpoints.applications.moveIn(appId), { move_in_date: moveInDate });
 }
 
 export function proposeTour(appId, scheduledAt) {
-  return api.post(`/api/applications/${appId}/tours`, { scheduled_at: scheduledAt });
+  return api.post(endpoints.applications.proposeTour(appId), { scheduled_at: scheduledAt });
 }
 
 export function acceptTour(tourId) {
-  return api.post(`/api/applications/tours/${tourId}/accept`);
+  return api.post(endpoints.applications.acceptTour(tourId));
 }
 
 export function rejectTour(tourId) {
-  return api.post(`/api/applications/tours/${tourId}/reject`);
+  return api.post(endpoints.applications.rejectTour(tourId));
 }
 
 export function counterProposeTour(tourId, scheduledAt) {
-  return api.post(`/api/applications/tours/${tourId}/counter`, { scheduled_at: scheduledAt });
+  return api.post(endpoints.applications.counterTour(tourId), { scheduled_at: scheduledAt });
 }
 
 export function todayDateValue() {

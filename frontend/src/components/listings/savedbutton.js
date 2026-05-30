@@ -3,7 +3,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
-import api from "../../api/axiosConfig";
+import { saveListing, unsaveListing } from "../../api/listings";
 import { FiHeart } from "react-icons/fi";
 
 export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
@@ -27,13 +27,13 @@ export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
 
     if (saved) {
       // Remove from saved listings
-      await api.delete(`/api/listings/saved/${listingId}`);
+      await unsaveListing(listingId);
       setSaved(false);
       if (onUnsave) onUnsave(listingId); // Callback to remove from saved listings page
     } else {
       // Save - only allow once
       try {
-        await api.post(`/api/listings/saved/${listingId}`, {});
+        await saveListing(listingId);
         setSaved(true);
         setAlertMsg("Listing saved!");
         setTimeout(() => setAlertMsg(""), 1800);

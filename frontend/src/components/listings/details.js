@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../../context/authContext";
 import SavedButton from "./savedbutton";
 import ShareButton from "./share";
+import { getListingById } from "../../api/listings";
 import { FiArrowLeft, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { FaCheckCircle, FaStar, FaMapMarkerAlt, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
 import avatar from "../../images/avatar.png";
@@ -17,9 +18,9 @@ export default function ListingDetail() {
   const [imgIdx, setImgIdx] = useState(0);
 
   useEffect(() => {
-    fetch(`/api/listings/${id}`)
-      .then((res) => res.json())
-      .then((data) => setListing(data));
+    getListingById(id)
+      .then((res) => setListing(res.data))
+      .catch(() => setListing(null));
   }, [id]);
 
   if (!listing) return <div>Loading…</div>;

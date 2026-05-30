@@ -1,19 +1,32 @@
 import api from './axiosConfig';
+import endpoints from './endpoints';
 
 export function login(email, password, role) {
-  return api.post('/api/auth/login', { email, password, role });
+  return api.post(endpoints.auth.login, { email, password, role });
 }
 
 export function signup(email, password, role, name) {
-  return api.post('/api/auth/signup', { email, password, role, name: name || undefined });
+  return api.post(endpoints.auth.signup, { email, password, role, name: name || undefined });
 }
 
 export function verify2fa(challengeToken, code) {
-  return api.post('/api/auth/verify-2fa', { challenge_token: challengeToken, code });
+  return api.post(endpoints.auth.verify2fa, { challenge_token: challengeToken, code });
 }
 
 export function logout() {
-  return api.post('/api/auth/logout');
+  return api.post(endpoints.auth.logout);
+}
+
+export function requestPasswordReset(email, role) {
+  return api.post(endpoints.auth.passwordResetRequest, { email, role });
+}
+
+export function confirmPasswordReset(token, newPassword, confirmPassword) {
+  return api.post(endpoints.auth.passwordResetConfirm, {
+    token,
+    new_password: newPassword,
+    confirm_password: confirmPassword,
+  });
 }
 
 const PASSWORD_RULES = [

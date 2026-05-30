@@ -1,44 +1,45 @@
 import api from './axiosConfig';
+import { apiAssetUrl } from './getBaseUrl';
+import endpoints from './endpoints';
 
 export function getCurrentUser() {
-  return api.get('/api/users/me');
+  return api.get(endpoints.users.me);
 }
 
 export function getPublicProfile(userId) {
-  return api.get(`/api/users/profile/${userId}`);
+  return api.get(endpoints.users.profile(userId));
 }
 
 export function submitProfileReview(userId, { rating, body }) {
-  return api.post(`/api/users/profile/${userId}/reviews`, { rating, body });
+  return api.post(endpoints.users.profileReview(userId), { rating, body });
 }
 
 export function updateProfile(payload) {
-  return api.patch('/api/users/me', payload);
+  return api.patch(endpoints.users.me, payload);
 }
 
 export function uploadProfilePhoto(file) {
   const form = new FormData();
   form.append('file', file);
-  return api.post('/api/users/upload-profile-doc', form, {
+  return api.post(endpoints.users.uploadProfileDoc, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
 export function changePassword(currentPassword, newPassword) {
-  return api.post('/api/users/change-password', {
+  return api.post(endpoints.users.changePassword, {
     current_password: currentPassword,
     new_password: newPassword,
   });
 }
 
 export function linkWallet(walletAddress) {
-  return api.post('/api/users/link-wallet', { wallet_address: walletAddress });
+  return api.post(endpoints.users.linkWallet, { wallet_address: walletAddress });
 }
 
 export function profilePhotoUrl(path) {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return path;
+  return apiAssetUrl(path) || null;
 }
 
 export function roleLabel(role) {

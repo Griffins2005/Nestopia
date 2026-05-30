@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FaBuilding, FaEllipsisV } from "react-icons/fa";
 import { FiTrash2 } from "react-icons/fi";
 import AuthContext from "../../context/authContext";
-import api from "../../api/axiosConfig";
+import { deleteListing, unsaveListing } from "../../api/listings";
 
 // Helper: time since
 function timeAgo(date) {
@@ -53,7 +53,7 @@ export default function SavedOrOwnedListingCard({ listing, userRole, onListingDe
             <button className="listing-btn-ntp" onClick={() => navigate(`/listing/${item.id}`)} > View Details </button>
             <button className="listing-btn-ntp"
               onClick={async () => {
-              await api.delete(`/api/listings/saved/${item.id}`);
+              await unsaveListing(item.id);
               if (onListingDeleted) onListingDeleted(item.id);
               }}>
               <FiTrash2 />
@@ -78,7 +78,7 @@ export default function SavedOrOwnedListingCard({ listing, userRole, onListingDe
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await api.delete(`/api/listings/${listing.id}`);
+      await deleteListing(listing.id);
       setShowDeleteConfirm(false);
       setConfirmChecked(false);
       if (onListingDeleted) onListingDeleted(listing.id);

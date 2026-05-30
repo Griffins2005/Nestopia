@@ -1,5 +1,6 @@
 // src/api/preferences.js
-import api from "./axiosConfig";
+import api from './axiosConfig';
+import endpoints from './endpoints';
 
 /** Parse stored move_in: `YYYY-MM-DD` or `YYYY-MM-DD/YYYY-MM-DD` */
 export function parseMoveInWindow(stored) {
@@ -59,17 +60,17 @@ export function normalizeCustomTag(raw) {
 }
 
 export function getRenterPreferences() {
-  return api.get("/api/preferences/renter");
+  return api.get(endpoints.preferences.renter);
 }
 
 export function setRenterPreferences(preferencePayload) {
-  return api.post("/api/preferences/renter", preferencePayload);
+  return api.post(endpoints.preferences.renter, preferencePayload);
 }
 
 export function getLandlordPreferences() {
-  return api.get("/api/preferences/landlord");
+  return api.get(endpoints.preferences.landlord);
 }
 
 export function setLandlordPreferences(preferencePayload) {
-  return api.post("/api/preferences/landlord", preferencePayload);
+  return api.post(endpoints.preferences.landlord, preferencePayload);
 }

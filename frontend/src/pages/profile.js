@@ -5,7 +5,9 @@ import EmptyState from '../components/EmptyState';
 import { useNestopia } from '../context/NestopiaContext';
 import AuthContext from '../context/authContext';
 import { NO_LISTINGS, getMyListings } from '../api/listings';
-import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile } from '../api/user';
+import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile, updateProfile, changePassword } from '../api/user';
+import { getSavedListings } from '../api/listings';
+import { getSecurityStatus, setupTotp, confirmTotp, disableTotp } from '../api/security';
 import { ProfileInfoCard, ActivityPanel } from '../components/profile/details';
 import {
   getActivityFeed,
@@ -23,7 +25,6 @@ import {
 import PreferencesDisplayCard from '../components/preferences/display';
 import PasswordStrength from '../components/PasswordStrength';
 import { isStrongPassword } from '../api/auth';
-import api from '../api/axiosConfig';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user || tab !== 'security') return;
-    api.get('/api/security/status')
+    getSecurityStatus()
       .then((res) => {
         setTotpEnabled(Boolean(res.data?.totp_enabled));
         setHasPassword(Boolean(res.data?.has_password));
@@ -141,7 +142,7 @@ export default function Profile() {
         }))))
         .catch(() => {});
     }
-    api.get('/api/listings/saved/')
+    getSavedListings()
       .then(res => setSavedListings((res.data || []).map(l => ({
         ...l,
         image: l.images?.[0] || l.image || '/assets/default-house.png',
@@ -202,7 +203,7 @@ export default function Profile() {
         payload.phone = draft.phone?.trim() || null;
         payload.contact_preference = draft.contact_preference || 'any';
       }
-      await api.patch('/api/users/me', payload);
+      await updateProfile(payload);
       if (refreshProfile) await refreshProfile();
       const refreshed = await getPublicProfile(user.id);
       setPublicProfile(refreshed.data);
@@ -229,10 +230,7 @@ export default function Profile() {
     }
     setPwSaving(true);
     try {
-      await api.post('/api/users/change-password', {
-        current_password: pwForm.current,
-        new_password: pwForm.next,
-      });
+      await changePassword(pwForm.current, pwForm.next);
       setPwForm({ current: '', next: '', confirm: '' });
       setShowPwForm(false);
       flashToast('Password updated.');
@@ -246,7 +244,7 @@ export default function Profile() {
     setTotpError('');
     setTotpBusy(true);
     try {
-      const res = await api.post('/api/security/totp/setup');
+      const res = await setupTotp();
       setTotpSetup(res.data);
       setTotpCode('');
     } catch (err) {
@@ -260,7 +258,7 @@ export default function Profile() {
     setTotpError('');
     setTotpBusy(true);
     try {
-      await api.post('/api/security/totp/confirm', { code: totpCode });
+      await confirmTotp(totpCode);
       setTotpEnabled(true);
       setTotpSetup(null);
       setTotpCode('');
@@ -277,10 +275,7 @@ export default function Profile() {
     setTotpError('');
     setTotpBusy(true);
     try {
-      await api.post('/api/security/totp/disable', {
-        password: disablePw,
-        code: disableCode,
-      });
+      await disableTotp(disablePw, disableCode);
       setTotpEnabled(false);
       setShowDisable(false);
       setDisablePw('');

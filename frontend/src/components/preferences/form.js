@@ -2,8 +2,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Icon } from "../Icons";
 import AuthContext from "../../context/authContext";
-import api from "../../api/axiosConfig";
-import { normalizeCustomTag } from "../../api/preferences";
+import { normalizeCustomTag, getRenterPreferences, getLandlordPreferences, setRenterPreferences, setLandlordPreferences } from "../../api/preferences";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -189,11 +188,8 @@ export default function PreferencesForm({ userType, onComplete }) {
     async function fetchPrefs() {
       if (!user) return;
       try {
-        const endpoint =
-          userType === "renter"
-            ? "/api/preferences/renter"
-            : "/api/preferences/landlord";
-        const { data } = await api.get(endpoint);
+        const fetchPrefs = userType === "renter" ? getRenterPreferences : getLandlordPreferences;
+        const { data } = await fetchPrefs();
         if (userType === "renter" && data) setRenterPrefs(prev => ({ ...prev, ...data }));
         if (userType === "landlord" && data) setLandlordPrefs(prev => ({ ...prev, ...data }));
       } catch (err) {}
@@ -307,15 +303,11 @@ export default function PreferencesForm({ userType, onComplete }) {
       return;
     }
     try {
-      let endpoint, prefs;
       if (userType === "renter") {
-        endpoint = "/api/preferences/renter";
-        prefs = renterPrefs;
+        await setRenterPreferences(renterPrefs);
       } else {
-        endpoint = "/api/preferences/landlord";
-        prefs = landlordPrefs;
+        await setLandlordPreferences(landlordPrefs);
       }
-      await api.post(endpoint, prefs);
     } catch (e) {
       setError("Error saving preferences.");
     }

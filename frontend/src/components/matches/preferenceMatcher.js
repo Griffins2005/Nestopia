@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axiosConfig";
+import { getDailyMatches } from "../../api/matches";
 
 const PreferenceMatcher = () => {
   const [matches, setMatches] = useState([]);
 
   useEffect(() => {
-    axios.get("/api/matches/daily").then(res => setMatches(res.data));
+    getDailyMatches().then(res => setMatches(res.data));
   }, []);
 
   return (

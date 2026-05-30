@@ -1,44 +1,43 @@
 import api from './axiosConfig';
-import { API_BASE_URL } from './getBaseUrl';
+import { apiAssetUrl } from './getBaseUrl';
+import endpoints from './endpoints';
 
 export function createListing(payload) {
-  return api.post('/api/listings/', payload);
+  return api.post(endpoints.listings.list, payload);
 }
 
 export function getAllListings(viewAsRenter = false) {
   const params = viewAsRenter ? { view_as_renter: true } : {};
-  return api.get('/api/listings/', { params });
+  return api.get(endpoints.listings.list, { params });
 }
 
 export function getMyListings() {
-  return api.get('/api/listings/owned');
+  return api.get(endpoints.listings.owned);
 }
 
 export function getListingById(listingId) {
-  return api.get(`/api/listings/${listingId}`);
+  return api.get(endpoints.listings.detail(listingId));
 }
 
 export function updateListing(listingId, payload) {
-  return api.put(`/api/listings/${listingId}`, payload);
+  return api.put(endpoints.listings.detail(listingId), payload);
 }
 
 export function deleteListing(listingId) {
-  return api.delete(`/api/listings/${listingId}`);
+  return api.delete(endpoints.listings.detail(listingId));
 }
 
 export function uploadListingImage(file) {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post('/api/listings/upload-image', formData, {
+  return api.post(endpoints.listings.uploadImage, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
 export function listingImageUrl(url) {
   if (!url) return '';
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = API_BASE_URL;
-  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+  return apiAssetUrl(url);
 }
 
 export function getListingImages(listing) {
@@ -47,6 +46,18 @@ export function getListingImages(listing) {
   }
   if (listing?.image) return [listingImageUrl(listing.image)];
   return [listingImageUrl('/assets/default-house.png')];
+}
+
+export function getSavedListings() {
+  return api.get(endpoints.listings.saved);
+}
+
+export function saveListing(listingId) {
+  return api.post(endpoints.listings.savedItem(listingId), {});
+}
+
+export function unsaveListing(listingId) {
+  return api.delete(endpoints.listings.savedItem(listingId));
 }
 
 /** Calm, unified empty-state copy for listings / matches / saved. */

@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import AuthContext from "../../context/authContext";
 import SavedOrOwnedListingCard from "./savedorowned";
-import api from "../../api/axiosConfig";
+import { getMyListings, getSavedListings } from "../../api/listings";
 
 export default function SavedListingsPage({ mode, onEditListing }) {
   const { user } = useContext(AuthContext);
@@ -15,10 +15,10 @@ export default function SavedListingsPage({ mode, onEditListing }) {
 
     setLoading(true);
     const url = mode === "owned" && user.role === "landlord"
-      ? "/api/listings/owned"
-      : "/api/listings/saved/";
+      ? getMyListings
+      : getSavedListings;
 
-    api.get(url)
+    url()
       .then((res) => {
         setListings(res.data);
         setLoading(false);

@@ -1,33 +1,35 @@
 #app/main.py
-from fastapi import FastAPI
+import logging
 import os
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from app.core.config import settings
-from app.db.session import engine, Base
-from app.db.dev_migrations import ensure_user_security_columns, ensure_listing_tenant_columns
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
+
+from app.core.config import settings
+from app.db.dev_migrations import ensure_listing_tenant_columns, ensure_user_security_columns
+from app.db.session import Base, engine
 from app.routers import (
+    applications,
     auth,
-    users,
-    preferences,
+    blockchain,
+    geo,
+    google_oauth,
     listing,
     matches,
-    tokens,
     payments,
-    google_oauth,
+    preferences,
     security,
-    geo,
-    wallet,
-    blockchain,
     stats,
-    applications,
+    tokens,
+    users,
+    wallet,
 )
-from app.core.config import settings
 
-app = FastAPI(title="RentMatch API")
+app = FastAPI(title="Nestopia API")
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 UPLOADS_DIR = BASE_DIR / "uploads"
@@ -36,7 +38,6 @@ app.mount("/static", StaticFiles(directory=str(UPLOADS_DIR)), name="static")
 
 origins = settings.cors_origins_list()
 if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"):
-    import logging
     logging.getLogger("uvicorn.error").info("CORS allow_origins: %s", origins)
 
 app.add_middleware(
@@ -48,14 +49,14 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
 
-# Automatically create database tables on startup (for dev)
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
     ensure_user_security_columns(engine)
     ensure_listing_tenant_columns(engine)
 
-# Routers
+
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(preferences.router)
@@ -71,6 +72,13 @@ app.include_router(blockchain.router)
 app.include_router(stats.router)
 app.include_router(applications.router)
 
+
 @app.get("/health")
 def read_health():
     return {"status": "ok"}
+
+
+@app.get("/stats/summary")
+def legacy_stats_summary():
+    """Back-compat redirect — use /api/stats/summary."""
+    return RedirectResponse(url="/api/stats/summary", status_code=308)

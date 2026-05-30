@@ -62,7 +62,7 @@ Tenant requirements are **listing-specific** (not global landlord prefs).
 ```
 Nestopia/
 ├── backend/          # FastAPI — app/, alembic/, Dockerfile, railway.toml
-├── frontend/         # React — src/, vercel.json
+├── frontend/         # React — src/api/endpoints.js = canonical API paths
 ├── backend/.env.example
 └── frontend/.env.example
 ```
@@ -117,19 +117,98 @@ Include `https://` — without it, requests incorrectly go to `vercel.app/nestop
 
 **Google OAuth** — JavaScript origins: Vercel URL + `http://localhost:3000`. Redirect URI on the **API**: `/api/auth/google/callback`.
 
-## API overview
+### After deploy — verify
 
-Prefix: `/api`. Session cookie: `nestopia_session`. Full interactive docs at `/docs`.
+```bash
+curl https://nestopia-production.up.railway.app/health
+curl -sI -X OPTIONS 'https://nestopia-production.up.railway.app/api/listings/' \
+  -H 'Origin: https://nestopia-rental.vercel.app' \
+  -H 'Access-Control-Request-Method: GET'
+# Expect: access-control-allow-origin: https://nestopia-rental.vercel.app
+```
 
-| Area | Key endpoints |
-|------|----------------|
-| Auth | `POST /auth/signup`, `/auth/login`, `/auth/logout`, `GET /auth/google/login` |
-| Users | `GET/PATCH /users/me`, profile upload, public `/users/profile/{id}` |
-| Preferences | `GET/POST /preferences/renter` |
-| Listings | `GET/POST/PUT/DELETE /listings`, saved, upload-image |
-| Matches | `GET /matches/daily` |
-| Applications | activity feed, contact, tours, accept/reject |
-| Geo | `GET /geo/search?q=…` |
+In the browser (DevTools → Network):
+
+1. API calls go to `https://nestopia-production.up.railway.app/...` (not under `vercel.app/...`)
+2. `POST /api/auth/login` → 200, then `GET /api/users/me` → 200
+3. `PATCH /api/users/me` → 200 when saving profile
+4. Cookie `nestopia_session` appears under the Railway domain after login
+
+## API reference
+
+All routes use prefix `/api` unless noted. Session cookie: `nestopia_session`. Interactive docs: `/docs` on the backend.
+
+Canonical frontend paths live in `frontend/src/api/endpoints.js` — keep in sync with `backend/app/routers/`.
+
+### Health
+
+| Method | Path | Auth |
+|--------|------|------|
+| GET | `/health` | No |
+
+### Auth (`/api/auth`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/signup` | Create account |
+| POST | `/login` | Email login (may return 2FA challenge) |
+| POST | `/verify-2fa` | Complete login with TOTP |
+| POST | `/logout` | Clear session |
+| GET | `/session` | Check session |
+| POST | `/password-reset/request` | Request reset token |
+| POST | `/password-reset/confirm` | Set new password |
+| GET | `/google/login` | Start Google OAuth |
+| GET | `/google/callback` | Google OAuth callback (API host) |
+
+### Users (`/api/users`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/me` | Current user |
+| PATCH | `/me` | Update profile |
+| GET | `/profile/{id}` | Public profile (optional auth) |
+| POST | `/profile/{id}/reviews` | Submit review |
+| POST | `/upload-profile-doc` | Profile photo upload |
+| POST | `/change-password` | Change password |
+| POST | `/link-wallet` | Link wallet address |
+
+### Preferences (`/api/preferences`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST | `/renter` | Renter housing preferences |
+| GET/POST | `/landlord` | Legacy landlord prefs |
+
+### Listings (`/api/listings`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/`, `` | List listings (optional auth, match scores for renters) |
+| POST | `/` | Create listing (landlord) |
+| GET | `/owned` | Landlord's listings |
+| GET | `/{id}` | Listing detail |
+| PUT | `/{id}` | Update listing |
+| DELETE | `/{id}` | Delete listing |
+| POST | `/upload-image` | Upload listing image |
+| GET | `/saved/` | Saved listings |
+| POST/DELETE | `/saved/{id}` | Save / unsave |
+
+### Matches, applications, geo, security, stats
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/matches/daily` | Daily ranked matches (renter) |
+| GET | `/api/applications/activity` | Activity feed |
+| POST | `/api/applications/from-contact` | Apply from listing contact |
+| POST | `/api/applications/{id}/*` | Withdraw, accept, reject, tours, move-in |
+| GET | `/api/geo/search` | Location search (Nominatim proxy) |
+| GET | `/api/security/status` | 2FA status |
+| POST | `/api/security/totp/*` | TOTP setup, confirm, disable |
+| GET | `/api/stats/summary` | Platform stats |
+
+### Optional (not wired in main UI)
+
+Payments (`/api/payments`), tokens (`/api/tokens`), wallet (`/api/wallet`), blockchain (`/api/blockchain`).
 
 ## Database
 

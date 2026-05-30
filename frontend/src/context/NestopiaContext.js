@@ -5,9 +5,11 @@ import {
   createListing as apiCreate,
   updateListing as apiUpdate,
   deleteListing as apiDelete,
+  getSavedListings,
+  saveListing,
+  unsaveListing,
 } from '../api/listings';
 import { getRenterPreferences, setRenterPreferences } from '../api/preferences';
-import api from '../api/axiosConfig';
 
 const NestopiaContext = createContext(null);
 
@@ -92,9 +94,9 @@ export function NestopiaProvider({ children }) {
       setPreferences(null);
       return;
     }
-    api.get('/api/listings/saved/')
+    getSavedListings()
       .then((res) => {
-        const ids = (res.data || []).map((item) => item.id);
+        const ids = (res.data || []).map((item) => item.listing?.id ?? item.id);
         setSavedIds(ids);
       })
       .catch(() => setSavedIds([]));
@@ -126,7 +128,7 @@ export function NestopiaProvider({ children }) {
       await api.delete(`/api/listings/saved/${id}`);
       setSavedIds((ids) => ids.filter((x) => x !== id));
     } else {
-      await api.post(`/api/listings/saved/${id}`, {});
+      await saveListing(id);
       setSavedIds((ids) => [...ids, id]);
     }
   }, [user, savedIds]);

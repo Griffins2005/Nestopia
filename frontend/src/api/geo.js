@@ -1,10 +1,11 @@
 import L from 'leaflet';
 import api from './axiosConfig';
+import endpoints from './endpoints';
 
 // --- API ---
 
 export async function searchPlaces(q, limit = 6, { preferAddresses = false } = {}) {
-  const res = await api.get('/api/geo/search', {
+  const res = await api.get(endpoints.geo.search, {
     params: { q, limit, prefer_addresses: preferAddresses },
   });
   return res.data?.results || [];

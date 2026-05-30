@@ -1,21 +1,16 @@
 // src/components/auth/loginform.js
 import React, { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import axios from "axios";
+import { requestPasswordReset, confirmPasswordReset } from "../../api/auth";
+import { API_BASE_URL } from "../../api/getBaseUrl";
 import AuthContext from "../../context/authContext";
 import AuthRoleChooser from "./AuthRoleChooser";
 import GoogleButton from "./googleButton";
-import { API_BASE_URL } from "../../api/getBaseUrl";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-const authClient = axios.create({
-  baseURL: API_BASE_URL || "http://localhost:8000",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
-
-const NETWORK_ERROR_MESSAGE =
-  "We couldn’t reach Nestopia right now. Check your internet connection or make sure the server at http://localhost:8000 is running.";
+const NETWORK_ERROR_MESSAGE = API_BASE_URL
+  ? "We couldn’t reach Nestopia right now. Check your internet connection and try again."
+  : "We couldn’t reach Nestopia right now. Check your internet connection or make sure the server at http://localhost:8000 is running.";
 
 const parseDetail = (error) => {
   if (!error?.response || error.code === "ERR_NETWORK") {
@@ -104,10 +99,7 @@ export default function LoginForm() {
     setResetMessage("");
     setResetLoading(true);
     try {
-      const response = await authClient.post("/api/auth/password-reset/request", {
-        email: resetEmail || email,
-        role,
-      });
+      const response = await requestPasswordReset(resetEmail || email, role);
       setResetMessage(response.data?.message || "Reset token generated.");
       setIssuedToken(response.data?.reset_token || "");
     } catch (err) {
@@ -132,11 +124,11 @@ export default function LoginForm() {
     }
     setResetLoading(true);
     try {
-      const response = await authClient.post("/api/auth/password-reset/confirm", {
-        token: tokenToUse,
-        new_password: resetPassword,
-        confirm_password: resetPasswordConfirm,
-      });
+      const response = await confirmPasswordReset(
+        tokenToUse,
+        resetPassword,
+        resetPasswordConfirm,
+      );
       setResetMessage(response.data?.message || "Password updated. You can log in now.");
       setResetTokenInput("");
       setIssuedToken("");

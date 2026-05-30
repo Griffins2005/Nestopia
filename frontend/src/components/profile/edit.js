@@ -1,8 +1,8 @@
 //src/components/profile/edit.js 
 import React, { useState, useRef, useContext, useEffect } from "react";
-import api from "../../api/axiosConfig";
 import avatar from "../../images/avatar.png";
 import AuthContext from "../../context/authContext";
+import { profilePhotoUrl, uploadProfilePhoto, updateProfile } from "../../api/user";
 import { FiMapPin, FiCheckCircle, FiNavigation } from "react-icons/fi";
 
 function isValidPhone(phone) {
@@ -20,11 +20,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [profileDoc, setProfileDoc] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState(
-    user.profilePicture
-      ? (user.profilePicture.startsWith("http")
-        ? user.profilePicture
-        : `${process.env.REACT_APP_API_URL || "http://localhost:8000"}${user.profilePicture}`)
-      : avatar
+    profilePhotoUrl(user.profilePicture) || avatar
   );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -119,12 +115,8 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
   const handleDragOver = (e) => { e.preventDefault(); };
 
   const handleUpload = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
     try {
-      const res = await api.post("/api/users/upload-profile-doc", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await uploadProfilePhoto(file);
       return res.data.file_url;
     } catch (e) {
       setError("Document upload failed.");
@@ -165,10 +157,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }) {
       }
     }
     try {
-      const res = await api.patch(
-        "/api/users/me",
-        { name, about, phone, location, profilePicture: fileUrl },
-      );
+      const res = await updateProfile({ name, about, phone, location, profilePicture: fileUrl });
       await refreshProfile?.();
       onSave(res.data);
     } catch (e) {

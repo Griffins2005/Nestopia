@@ -6,7 +6,7 @@ from app.db import models
 from app.db.session import get_db
 from app.schemas.stats import StatsSummary
 
-router = APIRouter(prefix="/stats", tags=["stats"])
+router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 
 @router.get("/summary", response_model=StatsSummary)

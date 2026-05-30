@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import AuthContext from "../../context/authContext";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/axiosConfig";
+import { getListingById } from "../../api/listings";
 import CreateListingForm from "./create";
 
 export default function EditListingPage() {
@@ -13,8 +13,7 @@ export default function EditListingPage() {
 
   useEffect(() => {
     if (!user) return;
-    api
-      .get(`/api/listings/${id}`)
+    getListingById(id)
       .then(res => setFields(res.data));
   }, [id, user]);
 

@@ -2,7 +2,7 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import AuthContext from "../../context/authContext";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/axiosConfig";
+import { createListing, updateListing, uploadListingImage } from "../../api/listings";
 
 // Category groupings for UX only (not backend)
 const PROPERTY_TYPES = [
@@ -98,11 +98,7 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
   const handleImageUpload = async files => {
     const uploadedUrls = [];
     for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await api.post("/api/listings/upload-image", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const res = await uploadListingImage(file);
       uploadedUrls.push(res.data.url);
     }
     setFields(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
@@ -175,7 +171,7 @@ export default function CreateListingForm({ edit = false, initialFields = {}, on
         await api.put(`/api/listings/${initialFields.id}`, payload);
         setStatusMessage("Listing updated!");
       } else {
-        await api.post("/api/listings/", payload);
+        await createListing(payload);
         setStatusMessage("Listing created!");
       }
       setTimeout(() => {

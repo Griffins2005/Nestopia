@@ -1,6 +1,7 @@
 // Shared API client — session via httpOnly cookie (withCredentials).
 import axios from 'axios';
 import { API_BASE_URL } from './getBaseUrl';
+import endpoints from './endpoints';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,7 +9,11 @@ const api = axios.create({
   withCredentials: true,
 });
 
-const AUTH_ROUTES = ['/api/auth/login', '/api/auth/signup'];
+const SILENT_401_ROUTES = [
+  endpoints.auth.login,
+  endpoints.auth.signup,
+  endpoints.users.me,
+];
 
 let onUnauthorized = null;
 
@@ -22,9 +27,9 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
-    const isAuthAttempt = AUTH_ROUTES.some((route) => url.includes(route));
+    const skipUnauthorized = SILENT_401_ROUTES.some((route) => url.includes(route));
 
-    if (status === 401 && !isAuthAttempt && onUnauthorized) {
+    if (status === 401 && !skipUnauthorized && onUnauthorized) {
       onUnauthorized(error);
     }
 

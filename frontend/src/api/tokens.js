@@ -1,20 +1,12 @@
-// src/api/tokens.js
-import api from "./axiosConfig";
+import api from './axiosConfig';
+import endpoints from './endpoints';
 
-/**
- * GET current user’s token balance
- * GET /api/tokens/balance/
- */
 export function getTokenBalance() {
-  return api.get("/api/tokens/balance/");
+  return api.get(endpoints.tokens.balance);
 }
 
-/**
- * DEDUCT tokens from current user (e.g., to spend 10 tokens for scheduling)
- * POST /api/tokens/spend/
- */
-export function spendTokens(amount, reason = "manual_spend") {
-  return api.post("/api/tokens/spend/", null, {
+export function spendTokens(amount, reason) {
+  return api.post(endpoints.tokens.spend, null, {
     params: { amount, reason },
   });
 }

@@ -1,14 +1,19 @@
 #app/routers/users.py
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Body
-from sqlalchemy.orm import Session, joinedload
-from app.db.models import RenterPreferences, LandlordPreferences, User, ProfileReview
-from app.schemas.user import UserResponse, UserUpdateIn, RenterPreferencesIn, LandlordPreferencesIn, RenterPreferencesOut, LandlordPreferencesOut
+from sqlalchemy.orm import Session
+from app.db.models import User
+from app.schemas.user import UserResponse, UserUpdateIn
 from app.schemas.profile import PublicProfileOut, ProfileReviewIn
-from app.utils.profile_helpers import build_public_profile, create_profile_review, normalize_contact_preference, CONTACT_PREFERENCES
+from app.utils.profile_helpers import (
+    build_public_profile,
+    create_profile_review,
+    normalize_contact_preference,
+    CONTACT_PREFERENCES,
+)
 from app.core.security import verify_password, get_password_hash
 from app.core.password_policy import validate_password_strength
-from app.crud.user import get_user_by_id, link_wallet_address, save_renter_preferences, save_landlord_preferences
-from app.dependencies import get_db, get_current_user
+from app.crud.user import link_wallet_address
+from app.dependencies import get_db, get_current_user, get_optional_user
 import os
 from uuid import uuid4
 from fastapi.responses import JSONResponse
@@ -21,23 +26,23 @@ os.makedirs(PROFILE_PICS_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-CONTACT_PREFERENCES = {"email", "phone", "text"}
-
 
 def _validate_contact_preference(user, data: dict) -> None:
     pref = data.get("contact_preference")
     if pref is None:
         return
-    if pref not in CONTACT_PREFERENCES:
+    normalized = normalize_contact_preference(pref)
+    if normalized not in CONTACT_PREFERENCES:
         raise HTTPException(
             status_code=400,
-            detail="contact_preference must be email, phone, or text.",
+            detail="contact_preference must be any, email, or text.",
         )
+    data["contact_preference"] = normalized
     phone = (data.get("phone") if "phone" in data else user.phone or "").strip()
-    if pref in {"phone", "text"} and not phone:
+    if normalized == "text" and not phone:
         raise HTTPException(
             status_code=400,
-            detail="Add a phone number before choosing call or text as your preferred contact.",
+            detail="Add a phone number before choosing text as your preferred contact.",
         )
 
 
@@ -46,18 +51,33 @@ def read_current_user(current_user=Depends(get_current_user)):
     return current_user
 
 
+@router.patch("/me", response_model=UserResponse)
+def update_current_user(
+    payload: UserUpdateIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    data = payload.dict(exclude_unset=True)
+    _validate_contact_preference(current_user, data)
+    for key, value in data.items():
+        setattr(current_user, key, value)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.get("/profile/{user_id}", response_model=PublicProfileOut)
 def get_public_profile(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="Profile not found")
     return build_public_profile(target, current_user, db)
 
-    db.refresh(current_user)
+
 @router.post("/profile/{user_id}/reviews", response_model=PublicProfileOut)
 def submit_profile_review(
     user_id: int,
@@ -71,9 +91,6 @@ def submit_profile_review(
     create_profile_review(db, current_user, user_id, payload.rating, payload.body)
     db.refresh(target)
     return build_public_profile(target, current_user, db)
-
-
-    return current_user
 
 @router.post("/upload-profile-doc")
 def upload_profile_doc(file: UploadFile = File(...), current_user=Depends(get_current_user)):
@@ -116,41 +133,3 @@ def link_wallet(request: dict, db: Session = Depends(get_db), current_user=Depen
         raise HTTPException(status_code=400, detail="No wallet_address provided")
     updated = link_wallet_address(db, current_user, wallet_address)
     return updated
-
-#PREFERENCES ENDPOINTS
-
-@router.post("/preferences/renter", response_model=RenterPreferencesOut)
-def set_renter_prefs(
-    prefs: RenterPreferencesIn,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return save_renter_preferences(db, current_user.id, prefs.dict())
-
-@router.get("/preferences/renter", response_model=RenterPreferencesOut)
-def get_renter_prefs(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    prefs = db.query(RenterPreferences).filter_by(user_id=current_user.id).first()
-    if not prefs:
-        raise HTTPException(404, "No preferences found")
-    return prefs
-
-@router.post("/preferences/landlord", response_model=LandlordPreferencesOut)
-def set_landlord_prefs(
-    prefs: LandlordPreferencesIn,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return save_landlord_preferences(db, current_user.id, prefs.dict())
-
-@router.get("/preferences/landlord", response_model=LandlordPreferencesOut)
-def get_landlord_prefs(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    prefs = db.query(LandlordPreferences).filter_by(user_id=current_user.id).first()
-    if not prefs:
-        raise HTTPException(404, "No preferences found")
-    return prefs

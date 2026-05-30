@@ -1,12 +1,13 @@
 // src/api/matches.js
-import api from "./axiosConfig";
+import api from './axiosConfig';
+import endpoints from './endpoints';
 
 /**
  * GET DAILY MATCHES FOR CURRENT RENTER
  * Backend returns ranked listings with match_score (0–1) and optional match_breakdown.
  */
 export function getDailyMatches() {
-  return api.get("/api/matches/daily");
+  return api.get(endpoints.matches.daily);
 }
 
 /** Normalize match_score to a 0–100 integer for display. */
