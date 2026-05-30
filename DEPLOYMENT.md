@@ -70,17 +70,21 @@ Use this if you’re on the **Settings** tab for your `nestopia` service:
 | **Source** | Branch | `main` |
 | **Networking** | Public Networking | **Generate Domain** ← do this first; copy the URL |
 | **Build** | Config-as-code → Railway Config File | `backend/railway.toml` |
-| **Build** | Builder | Should switch to **Dockerfile** once config file is picked up |
-| **Deploy** | Custom Start Command | *leave empty* (Dockerfile `CMD` runs uvicorn) |
+| **Build** | Builder | **Dockerfile** (via `railway.toml`) — or Railpack if Docker disabled |
+| **Deploy** | Custom Start Command | **Clear / empty** — do NOT use `--port $PORT` (Railway won't expand `$PORT` without a shell) |
 | **Deploy** | Healthcheck Path | `/health` |
 | **Deploy** | Serverless | **Off** (keep container always on) |
 | **Deploy** | Restart Policy | On Failure |
 
-If Builder stays on **Railpack** and deploy fails, set **Start Command** to:
+**Fix for `'$PORT' is not a valid integer`:** Your Custom Start Command is overriding Docker. **Delete** the start command field entirely and redeploy. The repo's `start.sh` / Dockerfile handles `PORT` correctly.
+
+If you must use Railpack (no Docker), set Start Command to:
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+sh start.sh
 ```
+
+**Do not use:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` — `$PORT` is passed literally and crashes.
 
 Then open the **Variables** tab (not Settings). **Delete any local-dev values** — these will not work on Railway:
 
