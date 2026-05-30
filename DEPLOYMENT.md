@@ -105,8 +105,8 @@ Do **not** type `${{Postgres.DATABASE_URL}}` by hand — use the Reference butto
 
 ```env
 DATABASE_URL=<Reference → Postgres → DATABASE_URL>
-SECRET_KEY=x1xnYegD_NtqYNFtQx_5TpMmQNd0CNEwGiJ0xi3zInYNxyFoBOuXeMq7L2xu5BHh
-SESSION_SECRET_KEY=cAmuesT3206RtGEgfDK4SrAUiBkr1smYfxfIlPe-kpGb3SotPlcI5-41yvyHbr2W
+SECRET_KEY=<from generate_secrets.py>
+SESSION_SECRET_KEY=<from generate_secrets.py>
 FRONTEND_URL=https://your-app.vercel.app
 CORS_ORIGINS=https://your-app.vercel.app
 API_PUBLIC_URL=https://YOUR-RAILWAY-DOMAIN.up.railway.app

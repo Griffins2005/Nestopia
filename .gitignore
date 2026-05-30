@@ -4,6 +4,7 @@
 # Keep AI matching notes local only
 AI_MATCHING_SUMMARY.md
 AI_MATCHING_IMPROVEMENTS.md
+DEPLOYMENT.md
 
 # Dependencies
 node_modules/

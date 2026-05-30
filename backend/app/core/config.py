@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     USE_ML_MATCHING: bool = False
     USE_SEMANTIC_MATCHING: bool = False
 
+    # Comma-separated browser origins (e.g. https://nestopia.vercel.app)
     CORS_ORIGINS: str = "http://localhost:3000"
     API_PUBLIC_URL: Optional[str] = None
 
