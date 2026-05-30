@@ -127,10 +127,21 @@ class Settings(BaseSettings):
         return values
 
     def cors_origins_list(self) -> List[str]:
-        origins = [o.strip() for o in (self.CORS_ORIGINS or "").split(",") if o.strip()]
-        frontend = (self.FRONTEND_URL or "").strip()
-        if frontend and frontend not in origins:
+        def norm(origin: str) -> str:
+            return (origin or "").strip().rstrip("/")
+
+        origins: List[str] = []
+        seen = set()
+        for o in (self.CORS_ORIGINS or "").split(","):
+            n = norm(o)
+            if n and n not in seen:
+                seen.add(n)
+                origins.append(n)
+
+        frontend = norm(self.FRONTEND_URL)
+        if frontend and frontend not in seen:
             origins.append(frontend)
+
         return origins or ["http://localhost:3000"]
 
     def google_redirect_uri(self) -> str:

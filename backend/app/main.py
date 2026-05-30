@@ -35,6 +35,10 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(UPLOADS_DIR)), name="static")
 
 origins = settings.cors_origins_list()
+if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    import logging
+    logging.getLogger("uvicorn.error").info("CORS allow_origins: %s", origins)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
