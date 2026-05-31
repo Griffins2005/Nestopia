@@ -1,10 +1,7 @@
 #app/routers/listing.py
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
-import os
-from uuid import uuid4
 
 from app.schemas.listing import ListingCreate, ListingUpdate, SavedListingResponse
 from app.crud.listings import (
@@ -22,6 +19,7 @@ from app.crud.preferences import get_renter_preferences
 from app.utils.match import compute_compatibility_score, compute_compatibility_breakdown
 from app.utils.listing_helpers import serialize_listing, normalize_listing_input, validate_listing_images
 from app.utils.application_helpers import get_tenant_homes
+from app.core.storage import save_upload
 
 router = APIRouter(prefix="/api/listings", tags=["Listings"])
 
@@ -41,14 +39,7 @@ def create_listing_endpoint(
 
 @router.post("/upload-image")
 def upload_image(file: UploadFile = File(...)):
-    UPLOAD_DIR = "uploads/listing_images"
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext = os.path.splitext(file.filename)[1]
-    fname = f"{uuid4().hex}{ext}"
-    fpath = os.path.join(UPLOAD_DIR, fname)
-    with open(fpath, "wb") as f:
-        f.write(file.file.read())
-    url = f"/static/listing_images/{fname}"
+    url = save_upload("listing_images", file.filename or "image.jpg", file.file)
     return JSONResponse({"url": url})
 
 

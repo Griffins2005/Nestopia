@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     GOOGLE_REDIRECT_URI: Optional[str] = None
 
+    # Railway volume mount path (default /data/uploads on Railway when unset)
+    UPLOADS_DIR: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

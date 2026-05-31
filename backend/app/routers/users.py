@@ -14,15 +14,8 @@ from app.core.security import verify_password, get_password_hash
 from app.core.password_policy import validate_password_strength
 from app.crud.user import link_wallet_address
 from app.dependencies import get_db, get_current_user, get_optional_user
-import os
-from uuid import uuid4
+from app.core.storage import save_upload
 from fastapi.responses import JSONResponse
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-UPLOAD_DIR = str(BASE_DIR / "uploads")
-PROFILE_PICS_DIR = os.path.join(UPLOAD_DIR, "profile_pics")
-os.makedirs(PROFILE_PICS_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -94,12 +87,7 @@ def submit_profile_review(
 
 @router.post("/upload-profile-doc")
 def upload_profile_doc(file: UploadFile = File(...), current_user=Depends(get_current_user)):
-    ext = os.path.splitext(file.filename)[1]
-    fname = f"{uuid4().hex}{ext}"
-    fpath = os.path.join(PROFILE_PICS_DIR, fname)
-    with open(fpath, "wb") as f:
-        f.write(file.file.read())
-    file_url = f"/static/profile_pics/{fname}"
+    file_url = save_upload("profile_pics", file.filename or "photo.jpg", file.file)
     return JSONResponse({"file_url": file_url})
 
 @router.post("/change-password")

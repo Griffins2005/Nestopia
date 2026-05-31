@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
+from app.core.storage import get_uploads_root, log_storage_mode
 from app.db.dev_migrations import ensure_listing_tenant_columns, ensure_user_security_columns
 from app.db.session import Base, engine
 from app.routers import (
@@ -32,8 +33,7 @@ from app.routers import (
 app = FastAPI(title="Nestopia API")
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
-UPLOADS_DIR = BASE_DIR / "uploads"
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+UPLOADS_DIR = get_uploads_root()
 app.mount("/static", StaticFiles(directory=str(UPLOADS_DIR)), name="static")
 
 origins = settings.cors_origins_list()
@@ -52,6 +52,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
 
 @app.on_event("startup")
 def on_startup():
+    log_storage_mode()
     Base.metadata.create_all(bind=engine)
     ensure_user_security_columns(engine)
     ensure_listing_tenant_columns(engine)

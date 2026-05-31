@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p uploads/listing_images uploads/profile_pics
+RUN mkdir -p /data/uploads/listing_images /data/uploads/profile_pics \
+    && mkdir -p uploads/listing_images uploads/profile_pics
+
+ENV UPLOADS_DIR=/data/uploads
 
 RUN chmod +x start.sh
 

@@ -103,7 +103,15 @@ COOKIE_SAMESITE=none
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=https://nestopia-production.up.railway.app/api/auth/google/callback
+UPLOADS_DIR=/data/uploads
 ```
+
+**Persistent uploads (Railway volume — no third-party storage):**
+
+1. Railway project → your API service → **Volumes** → **Add volume**
+2. Set **Mount path** to `/data/uploads`
+3. Ensure `UPLOADS_DIR=/data/uploads` (set in Dockerfile by default; optional in Variables)
+4. Redeploy, then re-upload listing photos / profile pics once (files from before the volume are gone)
 
 Use `backend/Dockerfile` + `backend/railway.toml`. Clear custom start commands. After deploy: `alembic upgrade head`.
 
@@ -240,7 +248,7 @@ Set `USE_ML_MATCHING=true` only if workers are running.
 
 - Rotate secrets in production; use HTTPS cookies (`COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` for split deploy)
 - Do not commit `.env`, `nestopia_dev.db`, or `uploads/`
-- Plan object storage for uploads on PaaS (local disk is ephemeral)
+- On Railway, attach a volume at `/data/uploads` so uploads survive redeploys (see Production section)
 
 ## Known limitations
 

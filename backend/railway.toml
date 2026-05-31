@@ -6,3 +6,5 @@ dockerfilePath = "Dockerfile"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
+# Attach a volume in the Railway dashboard: Mount path /data/uploads
+# Uploads persist across redeploys; without a volume, image URLs 404 after each deploy.
