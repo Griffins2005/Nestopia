@@ -125,7 +125,7 @@ export function NestopiaProvider({ children }) {
   const toggleSave = useCallback(async (id) => {
     if (!user) return;
     if (savedIds.includes(id)) {
-      await api.delete(`/api/listings/saved/${id}`);
+      await unsaveListing(id);
       setSavedIds((ids) => ids.filter((x) => x !== id));
     } else {
       await saveListing(id);

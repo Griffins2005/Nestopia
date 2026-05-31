@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   }, [restoreSession]);
 
   async function signup(email, password, role, name = "") {
-    await api.post("/api/auth/signup", { email, password, role, name: name || undefined });
+    await apiSignup(email, password, role, name);
     const userData = await restoreSession();
     if (role === 'landlord') {
       navigate('/profile');

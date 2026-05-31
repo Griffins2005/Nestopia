@@ -5,9 +5,9 @@ import EmptyState from '../components/EmptyState';
 import { useNestopia } from '../context/NestopiaContext';
 import AuthContext from '../context/authContext';
 import { NO_LISTINGS, getMyListings } from '../api/listings';
-import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile, updateProfile, changePassword } from '../api/user';
+import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile, updateProfile, changePassword as changePasswordApi } from '../api/user';
 import { getSavedListings } from '../api/listings';
-import { getSecurityStatus, setupTotp, confirmTotp, disableTotp } from '../api/security';
+import { getSecurityStatus, setupTotp, confirmTotp as confirmTotpApi, disableTotp as disableTotpApi } from '../api/security';
 import { ProfileInfoCard, ActivityPanel } from '../components/profile/details';
 import {
   getActivityFeed,
@@ -230,7 +230,7 @@ export default function Profile() {
     }
     setPwSaving(true);
     try {
-      await changePassword(pwForm.current, pwForm.next);
+      await changePasswordApi(pwForm.current, pwForm.next);
       setPwForm({ current: '', next: '', confirm: '' });
       setShowPwForm(false);
       flashToast('Password updated.');
@@ -258,7 +258,7 @@ export default function Profile() {
     setTotpError('');
     setTotpBusy(true);
     try {
-      await confirmTotp(totpCode);
+      await confirmTotpApi(totpCode);
       setTotpEnabled(true);
       setTotpSetup(null);
       setTotpCode('');
@@ -275,7 +275,7 @@ export default function Profile() {
     setTotpError('');
     setTotpBusy(true);
     try {
-      await disableTotp(disablePw, disableCode);
+      await disableTotpApi(disablePw, disableCode);
       setTotpEnabled(false);
       setShowDisable(false);
       setDisablePw('');

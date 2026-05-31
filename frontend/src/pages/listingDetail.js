@@ -65,6 +65,8 @@ export default function ListingDetail() {
       });
 
     return () => { cancelled = true; };
+    // listings read via listingsRef — only refetch when route id changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) {
