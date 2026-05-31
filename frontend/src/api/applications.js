@@ -5,6 +5,10 @@ export function getActivityFeed() {
   return api.get(endpoints.applications.activity);
 }
 
+export function getApplicationDetail(appId) {
+  return api.get(endpoints.applications.detail(appId));
+}
+
 export function applyFromContact(listingId) {
   return api.post(endpoints.applications.fromContact, { listing_id: listingId });
 }
@@ -19,6 +23,10 @@ export function landlordAcceptApplication(appId) {
 
 export function landlordRejectApplication(appId) {
   return api.post(endpoints.applications.landlordReject(appId));
+}
+
+export function landlordApproveLease(appId) {
+  return api.post(endpoints.applications.landlordApproveLease(appId));
 }
 
 export function tenantConfirmApplication(appId) {
@@ -72,6 +80,7 @@ export function formatTourWhen(iso) {
 export const APPLICATION_STATUS_LABELS = {
   pending: 'Under review',
   awaiting_tenant: 'Awaiting tenant',
+  awaiting_lease: 'Arrange lease signing',
   awaiting_move_in: 'Pending move-in',
   scheduled: 'Move-in scheduled',
   active: 'Active tenant',
@@ -79,9 +88,15 @@ export const APPLICATION_STATUS_LABELS = {
   withdrawn: 'Withdrawn',
 };
 
+export function applicationStatusLabel(status, { isLandlord = false } = {}) {
+  if (status === 'pending' && isLandlord) return 'Needs your review';
+  if (status === 'awaiting_lease' && isLandlord) return 'Confirm lease signed';
+  return APPLICATION_STATUS_LABELS[status] || status;
+}
+
 export function applicationStatusClass(status) {
   if (status === 'pending' || status === 'awaiting_tenant') return 'status-review';
-  if (status === 'awaiting_move_in') return 'status-pending';
+  if (status === 'awaiting_lease' || status === 'awaiting_move_in') return 'status-pending';
   if (status === 'scheduled' || status === 'active') return 'status-approved';
   if (status === 'rejected') return 'status-declined';
   return 'status-muted';

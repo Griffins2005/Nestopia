@@ -5,6 +5,7 @@ from app.dependencies import get_current_user, get_db
 from app.schemas.application import (
     ActivityFeedOut,
     ApplicationCreateIn,
+    ApplicationDetailOut,
     ApplicationOut,
     MoveInDateIn,
     TourOut,
@@ -13,9 +14,12 @@ from app.schemas.application import (
 from app.utils.application_helpers import (
     activate_due_applications,
     build_activity_feed,
+    count_pending_reviews,
     create_application_from_contact,
+    get_application_detail,
     get_applications_for_user,
     landlord_accept,
+    landlord_approve_lease,
     landlord_reject,
     propose_tour,
     respond_tour,
@@ -36,7 +40,17 @@ def get_activity(db: Session = Depends(get_db), current_user=Depends(get_current
     return {
         "activity": build_activity_feed(db, current_user),
         "applications": get_applications_for_user(db, current_user),
+        "pending_review_count": count_pending_reviews(db, current_user),
     }
+
+
+@router.get("/{app_id}", response_model=ApplicationDetailOut)
+def get_application(
+    app_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return get_application_detail(db, current_user, app_id)
 
 
 @router.post("/from-contact", response_model=ApplicationOut)
@@ -64,6 +78,16 @@ def accept_as_landlord(app_id: int, db: Session = Depends(get_db), current_user=
 @router.post("/{app_id}/landlord-reject", response_model=ApplicationOut)
 def reject_as_landlord(app_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     app = landlord_reject(db, current_user, app_id)
+    return serialize_application(app, current_user)
+
+
+@router.post("/{app_id}/landlord-approve-lease", response_model=ApplicationOut)
+def approve_lease_as_landlord(
+    app_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    app = landlord_approve_lease(db, current_user, app_id)
     return serialize_application(app, current_user)
 
 

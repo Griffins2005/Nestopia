@@ -34,6 +34,7 @@ export const endpoints = {
     saved: '/api/listings/saved/',
     savedItem: (id) => `/api/listings/saved/${id}`,
     detail: (id) => `/api/listings/${id}`,
+    tenantHomes: '/api/listings/tenant-homes',
     uploadImage: '/api/listings/upload-image',
   },
 
@@ -43,10 +44,12 @@ export const endpoints = {
 
   applications: {
     activity: '/api/applications/activity',
+    detail: (id) => `/api/applications/${id}`,
     fromContact: '/api/applications/from-contact',
     withdraw: (id) => `/api/applications/${id}/withdraw`,
     landlordAccept: (id) => `/api/applications/${id}/landlord-accept`,
     landlordReject: (id) => `/api/applications/${id}/landlord-reject`,
+    landlordApproveLease: (id) => `/api/applications/${id}/landlord-approve-lease`,
     tenantConfirm: (id) => `/api/applications/${id}/tenant-confirm`,
     moveIn: (id) => `/api/applications/${id}/move-in`,
     proposeTour: (id) => `/api/applications/${id}/tours`,

@@ -21,6 +21,7 @@ from app.dependencies import get_db, get_current_user, get_optional_user
 from app.crud.preferences import get_renter_preferences
 from app.utils.match import compute_compatibility_score, compute_compatibility_breakdown
 from app.utils.listing_helpers import serialize_listing, normalize_listing_input, validate_listing_images
+from app.utils.application_helpers import get_tenant_homes
 
 router = APIRouter(prefix="/api/listings", tags=["Listings"])
 
@@ -84,6 +85,13 @@ def get_owned_listings(db: Session = Depends(get_db), current_user=Depends(get_c
         raise HTTPException(status_code=403, detail="Not a landlord")
     listings = get_listings_by_landlord(db, current_user.id)
     return [serialize_listing(l) for l in listings]
+
+
+@router.get("/tenant-homes")
+def get_tenant_home_listings(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "renter":
+        raise HTTPException(status_code=403, detail="Not a tenant")
+    return get_tenant_homes(db, current_user)
 
 
 @router.get("/saved/")

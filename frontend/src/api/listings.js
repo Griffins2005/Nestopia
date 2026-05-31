@@ -15,6 +15,10 @@ export function getMyListings() {
   return api.get(endpoints.listings.owned);
 }
 
+export function getTenantHomes() {
+  return api.get(endpoints.listings.tenantHomes);
+}
+
 export function getListingById(listingId) {
   return api.get(endpoints.listings.detail(listingId));
 }

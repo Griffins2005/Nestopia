@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Icon } from '../Icons';
 import { listingImageUrl } from '../../api/listings';
 import {
-  APPLICATION_STATUS_LABELS,
   applicationStatusClass,
+  applicationStatusLabel,
   timeAgo,
-  todayDateValue,
-  formatTourWhen,
 } from '../../api/applications';
+import LandlordReviewQueue from './ApplicationReview';
+import ApplicationTourPanel from './ApplicationTour';
 import {
   displayName,
   roleLabel,
@@ -268,47 +268,6 @@ export function ProfileInfoCard({
   );
 }
 
-function TourSchedulePicker({
-  label = 'Pick date & time',
-  proposedAt,
-  date,
-  time,
-  onDateChange,
-  onTimeChange,
-}) {
-  return (
-    <div className="tour-schedule-picker">
-      {proposedAt && (
-        <p className="tour-proposed-label">
-          Proposed: {formatTourWhen(proposedAt)}
-        </p>
-      )}
-      <p className="tour-schedule-label">{label}</p>
-      <div className="tour-schedule-fields">
-        <label className="tour-schedule-field">
-          <span>Date</span>
-          <input
-            type="date"
-            className="form-input"
-            value={date}
-            min={todayDateValue()}
-            onChange={(e) => onDateChange(e.target.value)}
-          />
-        </label>
-        <label className="tour-schedule-field">
-          <span>Time</span>
-          <input
-            type="time"
-            className="form-input"
-            value={time}
-            onChange={(e) => onTimeChange(e.target.value)}
-          />
-        </label>
-      </div>
-    </div>
-  );
-}
-
 export function ActivityPanel({
   activity = [],
   applications = [],
@@ -316,160 +275,72 @@ export function ActivityPanel({
   userId,
   onAction,
   busyId,
+  navigate,
 }) {
-  const [tourAppId, setTourAppId] = useState(null);
-  const [tourDate, setTourDate] = useState('');
-  const [tourTime, setTourTime] = useState('');
-  const [counterTourId, setCounterTourId] = useState(null);
-  const [moveInAppId, setMoveInAppId] = useState(null);
-  const [moveInDate, setMoveInDate] = useState('');
+  const pendingReview = isLandlord
+    ? applications.filter((a) => a.status === 'pending' && a.is_landlord)
+    : [];
+  const trackedApps = isLandlord
+    ? applications.filter((a) => !(a.status === 'pending' && a.is_landlord))
+    : applications;
 
-  useEffect(() => {
-    setCounterTourId(null);
-    setTourAppId(null);
-    setTourDate('');
-    setTourTime('');
-  }, [applications]);
-
-  const appsTitle = isLandlord ? 'Recent applications' : 'My applications';
+  const appsTitle = isLandlord ? 'In progress & history' : 'My applications';
   const appsSubtitle = isLandlord
     ? 'Tenants who applied to your listings.'
     : 'Status of properties you applied to.';
 
   const renderAppActions = (app) => {
     const busy = busyId === app.id;
-    const tourBusy = busyId === `tour-${app.id}`;
-    const pendingTour = app.pending_tour;
 
     if (app.status === 'pending' && app.is_landlord) {
-      return (
-        <div className="activity-app-actions">
-          <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('accept', app.id)}>Accept</button>
-          <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('reject', app.id)}>Decline</button>
-        </div>
-      );
+      return null;
     }
-    if (app.status === 'pending' && app.is_tenant) {
+    if (app.status === 'pending') {
       return (
-        <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('withdraw', app.id)}>Withdraw</button>
+        <>
+          <ApplicationTourPanel app={app} userId={userId} onAction={onAction} busyId={busyId} />
+          {app.is_tenant && (
+            <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('withdraw', app.id)}>
+              Withdraw
+            </button>
+          )}
+        </>
       );
     }
     if (app.status === 'awaiting_tenant' && app.is_tenant) {
       return (
         <div className="activity-app-actions">
-          <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('confirm', app.id)}>Confirm</button>
-          <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('withdraw', app.id)}>Withdraw</button>
+          <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('confirm', app.id)}>
+            Confirm acceptance
+          </button>
+          <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('withdraw', app.id)}>
+            Withdraw
+          </button>
+        </div>
+      );
+    }
+    if (app.status === 'awaiting_lease' && app.is_landlord) {
+      return (
+        <div className="activity-app-actions">
+          <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('approve-lease', app.id)}>
+            Lease signed — mark complete
+          </button>
         </div>
       );
     }
     if (app.status === 'awaiting_move_in' && app.is_landlord) {
-      if (moveInAppId === app.id) {
-        return (
-          <div className="activity-inline-form">
-            <input type="date" className="form-input" value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} />
-            <button type="button" className="cta-btn small" disabled={busy || !moveInDate} onClick={() => onAction('move-in', app.id, { moveInDate })}>Save</button>
-            <button type="button" className="activity-btn-link" onClick={() => setMoveInAppId(null)}>Cancel</button>
-          </div>
-        );
-      }
       return (
-        <button type="button" className="cta-btn small" onClick={() => { setMoveInAppId(app.id); setMoveInDate(''); }}>Set move-in</button>
-      );
-    }
-    if (pendingTour && pendingTour.proposed_by_id === userId) {
-      return (
-        <p className="tour-proposed-label">
-          Tour pending approval: {formatTourWhen(pendingTour.scheduled_at)}
-        </p>
-      );
-    }
-    if (pendingTour && pendingTour.proposed_by_id !== userId) {
-      if (counterTourId === pendingTour.id) {
-        return (
-          <div className="activity-tour-block">
-            <TourSchedulePicker
-              label="Propose another time"
-              proposedAt={pendingTour.scheduled_at}
-              date={tourDate}
-              time={tourTime}
-              onDateChange={setTourDate}
-              onTimeChange={setTourTime}
-            />
-            <div className="activity-app-actions">
-              <button
-                type="button"
-                className="cta-btn small"
-                disabled={busy || !tourDate || !tourTime}
-                onClick={() => onAction('tour-counter', pendingTour.id, { tourDate, tourTime })}
-              >
-                Send proposal
-              </button>
-              <button type="button" className="activity-btn-link" onClick={() => setCounterTourId(null)}>Cancel</button>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="activity-tour-block">
-          <p className="tour-proposed-label">
-            Tour proposed: {formatTourWhen(pendingTour.scheduled_at)}
-          </p>
-          <div className="activity-app-actions">
-            <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('tour-accept', pendingTour.id)}>Accept tour</button>
-            <button type="button" className="activity-btn-decline" disabled={busy} onClick={() => onAction('tour-reject', pendingTour.id)}>Decline</button>
-            <button
-              type="button"
-              className="activity-btn-link"
-              onClick={() => {
-                setCounterTourId(pendingTour.id);
-                setTourDate('');
-                setTourTime('');
-                setTourAppId(null);
-              }}
-            >
-              Propose another time
-            </button>
-          </div>
+        <div className="activity-app-actions">
+          <button type="button" className="cta-btn small" disabled={busy} onClick={() => onAction('approve-lease', app.id)}>
+            Lease signed — mark complete
+          </button>
         </div>
       );
     }
-    if (!pendingTour && !['withdrawn', 'rejected', 'active'].includes(app.status)) {
-      if (tourAppId === app.id) {
-        return (
-          <div className="activity-tour-block">
-            <TourSchedulePicker
-              label="Schedule a tour (optional)"
-              date={tourDate}
-              time={tourTime}
-              onDateChange={setTourDate}
-              onTimeChange={setTourTime}
-            />
-            <div className="activity-app-actions">
-              <button
-                type="button"
-                className="cta-btn small"
-                disabled={tourBusy || !tourDate || !tourTime}
-                onClick={() => onAction('tour-propose', app.id, { tourDate, tourTime })}
-              >
-                Propose tour
-              </button>
-              <button type="button" className="activity-btn-link" onClick={() => setTourAppId(null)}>Cancel</button>
-            </div>
-          </div>
-        );
-      }
+    if (app.status === 'active' && app.is_tenant && navigate) {
       return (
-        <button
-          type="button"
-          className="activity-btn-link"
-          onClick={() => {
-            setTourAppId(app.id);
-            setTourDate('');
-            setTourTime('');
-            setCounterTourId(null);
-          }}
-        >
-          Schedule tour (optional)
+        <button type="button" className="activity-btn-link" onClick={() => navigate(`/listing/${app.listing_id}`)}>
+          View your home
         </button>
       );
     }
@@ -478,6 +349,15 @@ export function ActivityPanel({
 
   return (
     <div className="activity-panel">
+      {isLandlord && pendingReview.length > 0 && (
+        <LandlordReviewQueue
+          applications={pendingReview}
+          userId={userId}
+          onAction={onAction}
+          busyId={busyId}
+        />
+      )}
+
       <section className="activity-section">
         <h2 className="activity-section-title">Recent activity</h2>
         <p className="activity-section-sub">What&apos;s been happening on your account.</p>
@@ -502,11 +382,15 @@ export function ActivityPanel({
       <section className="activity-section">
         <h2 className="activity-section-title">{appsTitle}</h2>
         <p className="activity-section-sub">{appsSubtitle}</p>
-        {applications.length === 0 ? (
-          <p className="activity-empty">No applications yet.</p>
+        {trackedApps.length === 0 ? (
+          <p className="activity-empty">
+            {isLandlord && pendingReview.length > 0
+              ? 'No other applications in progress.'
+              : 'No applications yet.'}
+          </p>
         ) : (
           <ul className="activity-app-list">
-            {applications.map((app) => (
+            {trackedApps.map((app) => (
               <li key={app.id} className="activity-app-item">
                 <div className="activity-app-main">
                   <strong>{app.listing_title}</strong>
@@ -514,10 +398,13 @@ export function ActivityPanel({
                     {isLandlord ? `Applicant: ${app.tenant_name}` : `Host: ${app.landlord_name}`}
                     {' · '}{timeAgo(app.updated_at || app.created_at)}
                   </span>
+                  {app.stage_message && (
+                    <p className="activity-stage-message">{app.stage_message}</p>
+                  )}
                   {renderAppActions(app)}
                 </div>
                 <span className={`activity-status-badge ${applicationStatusClass(app.status)}`}>
-                  {APPLICATION_STATUS_LABELS[app.status] || app.status}
+                  {applicationStatusLabel(app.status, { isLandlord: isLandlord && app.is_landlord })}
                 </span>
               </li>
             ))}

@@ -2625,6 +2625,165 @@ a { color: inherit; }
   font-size: 0.88rem;
 }
 
+/* Landlord application review */
+.app-review-queue {
+  border: 2px solid var(--ntp-green-200, #b8e6d4);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fdfb 0%, #fff 100%);
+  padding: 1.25rem 1.35rem;
+}
+.app-review-queue-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.app-review-queue-count {
+  flex-shrink: 0;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ntp-green-600, #0f7c5a);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.app-review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.app-review-card {
+  border: 1px solid var(--ntp-border-soft);
+  border-radius: 14px;
+  background: #fff;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+.app-review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.app-review-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.app-review-header-main strong {
+  font-size: 1rem;
+  color: var(--ntp-fg-strong);
+}
+.app-review-header-main span {
+  font-size: 0.86rem;
+  color: var(--ntp-fg-muted);
+}
+.app-review-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+.app-review-body {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ntp-border-soft);
+  display: grid;
+  gap: 1rem;
+}
+.app-review-loading,
+.app-review-error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ntp-fg-muted);
+}
+.app-review-error { color: #b91c1c; }
+.app-review-listing-context {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--ntp-green-50, #f0faf6);
+  border: 1px solid var(--ntp-green-200, #b8e6d4);
+}
+.app-review-context-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ntp-fg-muted);
+  margin-bottom: 0.2rem;
+}
+.app-review-context-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.45rem;
+  font-size: 0.86rem;
+  color: var(--ntp-fg-soft);
+}
+.app-review-match-pill {
+  font-weight: 600;
+  color: var(--ntp-green-700, #0f5c44);
+}
+.app-review-match h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  color: var(--ntp-fg-strong);
+}
+.app-review-profile-link {
+  display: flex;
+  justify-content: flex-start;
+}
+.app-review-decision {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed var(--ntp-border);
+}
+.app-review-decision p {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--ntp-fg-soft);
+}
+.app-review-blocked {
+  color: #b45309 !important;
+  font-weight: 500;
+}
+.app-tour-panel {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed var(--ntp-border-soft);
+}
+.app-tour-panel.app-tour-confirmed {
+  background: var(--ntp-green-50, #f0faf6);
+  border-color: var(--ntp-green-200, #b8e6d4);
+}
+.app-tour-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ntp-fg-muted);
+}
+.activity-stage-message {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  color: var(--ntp-fg-soft);
+  line-height: 1.45;
+}
+
 /* Location picker */
 .location-picker { display: flex; flex-direction: column; gap: 0.75rem; }
 .location-selected { display: flex; flex-wrap: wrap; gap: 0.45rem; }

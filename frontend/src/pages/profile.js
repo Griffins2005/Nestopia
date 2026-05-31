@@ -4,7 +4,7 @@ import { Icon } from '../components/Icons';
 import EmptyState from '../components/EmptyState';
 import { useNestopia } from '../context/NestopiaContext';
 import AuthContext from '../context/authContext';
-import { NO_LISTINGS, getMyListings } from '../api/listings';
+import { NO_LISTINGS, getMyListings, getTenantHomes } from '../api/listings';
 import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile, updateProfile, changePassword as changePasswordApi } from '../api/user';
 import { getSavedListings } from '../api/listings';
 import { getSecurityStatus, setupTotp, confirmTotp as confirmTotpApi, disableTotp as disableTotpApi } from '../api/security';
@@ -14,6 +14,7 @@ import {
   withdrawApplication,
   landlordAcceptApplication,
   landlordRejectApplication,
+  landlordApproveLease,
   tenantConfirmApplication,
   setApplicationMoveIn,
   proposeTour,
@@ -36,9 +37,14 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ name: '', email: '', location: '', about: '', phone: '', contact_preference: 'any' });
   const [publicProfile, setPublicProfile] = useState(null);
-  const [activityData, setActivityData] = useState({ activity: [], applications: [] });
+  const [activityData, setActivityData] = useState({
+    activity: [],
+    applications: [],
+    pending_review_count: 0,
+  });
   const [activityBusy, setActivityBusy] = useState(null);
   const [myListings, setMyListings] = useState([]);
+  const [tenantHomes, setTenantHomes] = useState([]);
   const [savedListings, setSavedListings] = useState([]);
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
@@ -85,11 +91,18 @@ export default function Profile() {
       .catch(() => {});
   }, [user, tab]);
 
+  const normalizeActivity = (data) => ({
+    activity: data?.activity || [],
+    applications: data?.applications || [],
+    pending_review_count: data?.pending_review_count ?? 0,
+  });
+
   useEffect(() => {
-    if (!user || tab !== 'activity') return;
+    if (!user) return;
+    if (tab !== 'activity' && user.role !== 'landlord') return;
     getActivityFeed()
-      .then((res) => setActivityData(res.data || { activity: [], applications: [] }))
-      .catch(() => setActivityData({ activity: [], applications: [] }));
+      .then((res) => setActivityData(normalizeActivity(res.data)))
+      .catch(() => setActivityData({ activity: [], applications: [], pending_review_count: 0 }));
   }, [user, tab]);
 
   useEffect(() => {
@@ -101,7 +114,7 @@ export default function Profile() {
 
   const loadActivity = () => {
     getActivityFeed()
-      .then((res) => setActivityData(res.data || { activity: [], applications: [] }))
+      .then((res) => setActivityData(normalizeActivity(res.data)))
       .catch(() => {});
   };
 
@@ -110,26 +123,73 @@ export default function Profile() {
     setActivityBusy(tourBusy ? `tour-${id}` : id);
     try {
       const scheduledAt = combineDateAndTime(extra.tourDate, extra.tourTime);
-      if (action === 'accept') await landlordAcceptApplication(id);
-      else if (action === 'reject') await landlordRejectApplication(id);
-      else if (action === 'withdraw') await withdrawApplication(id);
-      else if (action === 'confirm') await tenantConfirmApplication(id);
-      else if (action === 'move-in') await setApplicationMoveIn(id, extra.moveInDate);
-      else if (action === 'tour-propose') {
+      if (action === 'accept') {
+        await landlordAcceptApplication(id);
+        loadActivity();
+        flashToast('Application accepted — tenant can now confirm.');
+      } else if (action === 'reject') {
+        await landlordRejectApplication(id);
+        loadActivity();
+        flashToast('Application declined.');
+      } else if (action === 'approve-lease') {
+        await landlordApproveLease(id);
+        loadActivity();
+        flashToast('Lease marked complete — tenant is now active on this listing.');
+      } else if (action === 'withdraw') {
+        await withdrawApplication(id);
+        loadActivity();
+        flashToast('Updated.');
+      } else if (action === 'confirm') {
+        await tenantConfirmApplication(id);
+        loadActivity();
+        flashToast('Confirmed — coordinate lease signing with your host.');
+      } else if (action === 'move-in') {
+        await setApplicationMoveIn(id, extra.moveInDate);
+        loadActivity();
+        flashToast('Updated.');
+      } else if (action === 'tour-propose') {
         if (!scheduledAt) { flashToast('Pick a date and time.'); return; }
         await proposeTour(id, scheduledAt);
+        loadActivity();
+        flashToast('Updated.');
       } else if (action === 'tour-counter') {
         if (!scheduledAt) { flashToast('Pick a date and time.'); return; }
         await counterProposeTour(id, scheduledAt);
-      } else if (action === 'tour-accept') await acceptTour(id);
-      else if (action === 'tour-reject') await rejectTour(id);
-      loadActivity();
-      flashToast('Updated.');
+        loadActivity();
+        flashToast('Updated.');
+      } else if (action === 'tour-accept') {
+        await acceptTour(id);
+        loadActivity();
+        flashToast('Updated.');
+      } else if (action === 'tour-reject') {
+        await rejectTour(id);
+        loadActivity();
+        flashToast('Updated.');
+      }
     } catch (err) {
       const detail = err?.response?.data?.detail;
       flashToast(typeof detail === 'string' ? detail : 'Could not update.');
     }
     setActivityBusy(null);
+  };
+
+  useEffect(() => {
+    if (!user || tab !== 'myhome' || user.role !== 'renter') return;
+    getTenantHomes()
+      .then((res) => setTenantHomes((res.data || []).map((l) => ({
+        ...l,
+        image: l.images?.[0] || l.image || '/assets/default-house.png',
+      }))))
+      .catch(() => setTenantHomes([]));
+  }, [user, tab]);
+
+  const loadTenantHomes = () => {
+    getTenantHomes()
+      .then((res) => setTenantHomes((res.data || []).map((l) => ({
+        ...l,
+        image: l.images?.[0] || l.image || '/assets/default-house.png',
+      }))))
+      .catch(() => setTenantHomes([]));
   };
 
   useEffect(() => {
@@ -141,6 +201,8 @@ export default function Profile() {
           image: l.images?.[0] || l.image || '/assets/default-house.png',
         }))))
         .catch(() => {});
+    } else {
+      loadTenantHomes();
     }
     getSavedListings()
       .then(res => setSavedListings((res.data || []).map(l => ({
@@ -156,9 +218,12 @@ export default function Profile() {
     { id: 'overview', label: 'Profile', icon: 'circle-user' },
     ...(isLandlord
       ? [{ id: 'listings', label: 'Listings', icon: 'home', count: myListings.length }]
-      : [{ id: 'preferences', label: 'Preferences', icon: 'gear' }]),
+      : [
+        { id: 'preferences', label: 'Preferences', icon: 'gear' },
+        { id: 'myhome', label: 'My home', icon: 'bed', count: tenantHomes.length },
+      ]),
     { id: 'saved', label: 'Saved', icon: 'heart', count: savedListings.length },
-    { id: 'activity', label: 'Activity', icon: 'activity' },
+    { id: 'activity', label: 'Activity', icon: 'activity', count: isLandlord ? activityData.pending_review_count : 0 },
     { id: 'security', label: 'Security', icon: 'lock' },
   ];
 
@@ -418,7 +483,46 @@ export default function Profile() {
           userId={user.id}
           onAction={handleActivityAction}
           busyId={activityBusy}
+          navigate={navigate}
         />
+      )}
+
+      {tab === "myhome" && !isLandlord && (
+        <div className="profile-card">
+          <div className="profile-card-head">
+            <h2>My home</h2>
+            <p className="profile-card-sub">Listings where your lease is active.</p>
+          </div>
+          {tenantHomes.length === 0 ? (
+            <EmptyState
+              icon="bed"
+              title="No active rental yet"
+              description="Once a host confirms your lease signing, your home will appear here and in your activity history."
+            />
+          ) : (
+            <div className="profile-listing-list">
+              {tenantHomes.map((listing) => (
+                <button
+                  key={listing.id}
+                  type="button"
+                  className="profile-listing-row"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
+                  <img src={listing.image} alt="" width={56} height={56} style={{ borderRadius: 10, objectFit: 'cover' }} />
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <strong>{listing.title}</strong>
+                    <div style={{ fontSize: '0.86rem', color: 'var(--ntp-fg-muted)' }}>{listing.location}</div>
+                    {listing.move_in_date && (
+                      <div style={{ fontSize: '0.82rem', color: 'var(--ntp-green-700)' }}>
+                        Active since {listing.move_in_date}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {tab === "preferences" && (

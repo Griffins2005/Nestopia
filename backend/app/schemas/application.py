@@ -41,6 +41,10 @@ class ApplicationOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     pending_tour: Optional[TourOut] = None
+    accepted_tour: Optional[TourOut] = None
+    can_landlord_accept: bool = False
+    tour_blocks_accept: bool = False
+    stage_message: str = ""
     is_tenant: bool = False
     is_landlord: bool = False
 
@@ -54,6 +58,15 @@ class ActivityItemOut(BaseModel):
     application_id: Optional[int] = None
 
 
+class ApplicationDetailOut(ApplicationOut):
+    tenant_profile: Optional[dict] = None
+    renter_preferences: Optional[dict] = None
+    match_breakdown: Optional[dict] = None
+    listing_location: Optional[str] = None
+    listing_rent: Optional[int] = None
+
+
 class ActivityFeedOut(BaseModel):
     activity: List[ActivityItemOut] = Field(default_factory=list)
     applications: List[ApplicationOut] = Field(default_factory=list)
+    pending_review_count: int = 0
