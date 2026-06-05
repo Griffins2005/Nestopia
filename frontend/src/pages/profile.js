@@ -4,9 +4,14 @@ import { Icon } from '../components/Icons';
 import EmptyState from '../components/EmptyState';
 import { useNestopia } from '../context/NestopiaContext';
 import AuthContext from '../context/authContext';
-import { NO_LISTINGS, getMyListings, getTenantHomes } from '../api/listings';
+import {
+  NO_LISTINGS,
+  getMyListings,
+  getTenantHomes,
+  getListingImages,
+  getSavedListings,
+} from '../api/listings';
 import { nameOrPlaceholder, profilePhotoUrl, uploadProfilePhoto, CONTACT_PREFERENCE_OPTIONS, isValidPhone, getPublicProfile, updateProfile, changePassword as changePasswordApi } from '../api/user';
-import { getSavedListings } from '../api/listings';
 import { getSecurityStatus, setupTotp, confirmTotp as confirmTotpApi, disableTotp as disableTotpApi } from '../api/security';
 import { ProfileInfoCard, ActivityPanel } from '../components/profile/details';
 import {
@@ -508,7 +513,14 @@ export default function Profile() {
                   className="profile-listing-row"
                   onClick={() => navigate(`/listing/${listing.id}`)}
                 >
-                  <img src={listing.image} alt="" width={56} height={56} style={{ borderRadius: 10, objectFit: 'cover' }} />
+                  <img
+                    src={getListingImages(listing)[0]}
+                    alt=""
+                    width={56}
+                    height={56}
+                    style={{ borderRadius: 10, objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.src = '/assets/default-house.png'; }}
+                  />
                   <div style={{ flex: 1, textAlign: 'left' }}>
                     <strong>{listing.title}</strong>
                     <div style={{ fontSize: '0.86rem', color: 'var(--ntp-fg-muted)' }}>{listing.location}</div>
@@ -553,7 +565,7 @@ export default function Profile() {
                 return (
                   <div key={l.id} className="profile-listing-row-wrap">
                     <button type="button" className="profile-listing-row" onClick={() => navigate(`/listing/${l.id}`)}>
-                      <div className="pl-thumb" style={{ backgroundImage: `url(${l.image})` }} />
+                      <div className="pl-thumb" style={{ backgroundImage: `url(${getListingImages(l)[0]})` }} />
                       <div className="pl-body">
                         <strong>{l.title}</strong>
                         <span>{l.location}</span>
@@ -596,7 +608,7 @@ export default function Profile() {
             <div className="profile-listing-list">
               {savedListings.map((l) => (
                 <button key={l.id} className="profile-listing-row" onClick={() => navigate(`/listing/${l.id}`)}>
-                  <div className="pl-thumb" style={{ backgroundImage: `url(${l.image})` }} />
+                  <div className="pl-thumb" style={{ backgroundImage: `url(${getListingImages(l)[0]})` }} />
                   <div className="pl-body">
                     <strong>{l.title}</strong>
                     <span>{l.location}</span>

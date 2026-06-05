@@ -106,12 +106,31 @@ GOOGLE_REDIRECT_URI=https://nestopia-production.up.railway.app/api/auth/google/c
 UPLOADS_DIR=/data/uploads
 ```
 
-**Persistent uploads (Railway volume — no third-party storage):**
+**Persistent uploads (Railway volume — stays on Railway, no extra vendor):**
 
-1. Railway project → your API service → **Volumes** → **Add volume**
-2. Set **Mount path** to `/data/uploads`
-3. Ensure `UPLOADS_DIR=/data/uploads` (set in Dockerfile by default; optional in Variables)
-4. Redeploy, then re-upload listing photos / profile pics once (files from before the volume are gone)
+Railway **does not** put volumes under Settings anymore. You add them from the **project canvas** (the diagram with your services):
+
+1. Open your Railway **project** (not just the service logs).
+2. **Right-click** empty space on the canvas → **Add volume**  
+   **or** press **⌘K** (Mac) / **Ctrl+K** (Windows) → search **“Volume”** → create one.
+3. When prompted, select your **Nestopia API service**.
+4. Set **Mount path** to `/data/uploads`.
+5. Redeploy the API service.
+
+After deploy, logs should show: `Upload storage: Railway volume mounted at /data/uploads`.
+
+**CLI alternative** (from repo, linked to the API service):
+
+```bash
+railway link
+railway volume add --mount-path /data/uploads
+```
+
+**Plan note:** Volumes require a **Hobby** (or Pro) plan. On the **Free** tier, the Volume option is hidden / unavailable — upgrade the project to Hobby if you do not see it.
+
+If the container runs as non-root, add variable `RAILWAY_RUN_UID=0` on the API service.
+
+Re-upload listing photos and profile pics once after the volume is attached (earlier files were on ephemeral disk).
 
 Use `backend/Dockerfile` + `backend/railway.toml`. Clear custom start commands. After deploy: `alembic upgrade head`.
 

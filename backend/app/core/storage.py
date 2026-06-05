@@ -23,8 +23,13 @@ def _on_railway() -> bool:
 
 
 def get_uploads_root() -> Path:
+    # Railway injects this when a volume is attached to the service.
+    railway_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
     configured = (settings.UPLOADS_DIR or "").strip()
-    if configured:
+
+    if railway_mount:
+        root = Path(railway_mount)
+    elif configured:
         root = Path(configured)
     elif _on_railway():
         root = Path(RAILWAY_UPLOADS_DEFAULT)
@@ -63,12 +68,15 @@ def log_storage_mode() -> None:
         logger.info("Upload storage: %s", root)
         return
 
-    configured = (settings.UPLOADS_DIR or "").strip()
-    if configured:
-        logger.info("Upload storage: Railway volume (UPLOADS_DIR=%s)", configured)
+    railway_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
+    if railway_mount:
+        logger.info("Upload storage: Railway volume mounted at %s", railway_mount)
+    elif (settings.UPLOADS_DIR or "").strip():
+        logger.info("Upload storage: UPLOADS_DIR=%s", settings.UPLOADS_DIR)
     else:
-        logger.info(
-            "Upload storage: %s (attach a Railway volume at this mount path to survive redeploys)",
+        logger.warning(
+            "Upload storage: %s — no Railway volume detected (RAILWAY_VOLUME_MOUNT_PATH unset). "
+            "Add a volume via the project canvas (⌘K → Volume) or upgrade to Hobby if unavailable.",
             root,
         )
 
