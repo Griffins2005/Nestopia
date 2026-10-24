@@ -94,7 +94,7 @@ The API runs as a **free Render web service**. Vercel stays the frontend host. N
 
 `render.yaml` at the repo root defines:
 
-- Web service `nestopia-api` on the free plan — Docker build from `backend/`, health check `/health`. `start.sh` runs `alembic upgrade head`, then starts the API.
+- Web service `nestopia-api` on the free plan — Docker build from `backend/`, health check `/health`. On an empty database, `start.sh` creates tables from the models and stamps Alembic at head. Later deploys run new Alembic revisions.
 - Postgres `nestopia-db` on the free plan
 
 Free-tier limits:
@@ -219,11 +219,7 @@ Payments (`/api/payments`), tokens (`/api/tokens`), wallet (`/api/wallet`), bloc
 
 ## Database
 
-PostgreSQL in production; SQLite for local dev (tables auto-created on startup).
-
-```bash
-cd backend && alembic upgrade head
-```
+PostgreSQL in production; SQLite for local dev. Both create tables from the SQLAlchemy models on startup. The checked-in Alembic revisions alter an older schema, so they are applied only after that schema already exists.
 
 ## Testing
 
