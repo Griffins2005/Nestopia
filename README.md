@@ -94,7 +94,7 @@ The API runs as a **free Render web service**. Vercel stays the frontend host. N
 
 `render.yaml` at the repo root defines:
 
-- Web service `nestopia-api` on the free plan — Docker build from `backend/`, health check `/health`, `alembic upgrade head` before each start
+- Web service `nestopia-api` on the free plan — Docker build from `backend/`, health check `/health`. `start.sh` runs `alembic upgrade head`, then starts the API.
 - Postgres `nestopia-db` on the free plan
 
 Free-tier limits:
