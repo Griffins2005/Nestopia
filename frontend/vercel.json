@@ -5,6 +5,6 @@
   "outputDirectory": "build",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/((?!static/).*)", "destination": "/index.html" }
+    { "source": "/((?!static/|_vercel/).*)", "destination": "/index.html" }
   ]
 }

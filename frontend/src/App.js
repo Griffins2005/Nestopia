@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, matchPath } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider } from "./context/authContext";
 import AuthContext from "./context/authContext";
@@ -18,6 +19,35 @@ import Profile from "./pages/profile";
 import UserProfile from "./pages/userProfile";
 import OAuthCallback from "./pages/oauthCallback";
 import Onboarding from "./pages/onboarding";
+
+const INSIGHT_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+  "/listings",
+  "/listing/new",
+  "/listing/edit/:id",
+  "/listing/:id",
+  "/matches",
+  "/saved",
+  "/preferences",
+  "/profile",
+  "/users/:id",
+  "/oauth-callback",
+  "/onboarding",
+];
+
+function Insights() {
+  const { pathname } = useLocation();
+  const route = INSIGHT_ROUTES.find((pattern) => matchPath({ path: pattern, end: true }, pathname)) || pathname;
+
+  return (
+    <>
+      <Analytics route={route} path={pathname} />
+      <SpeedInsights route={route} />
+    </>
+  );
+}
 
 function Toast() {
   const { toast } = useNestopia();
@@ -85,7 +115,7 @@ export default function App() {
       <AuthProvider>
         <NestopiaProvider>
           <AppInner />
-          <SpeedInsights />
+          <Insights />
         </NestopiaProvider>
       </AuthProvider>
     </Router>
