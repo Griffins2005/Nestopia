@@ -72,7 +72,7 @@ export default function Preferences() {
       <div className="form-head">
         <p className="eyebrow">Your preferences</p>
         <h1>Tell us your vibe</h1>
-        <p>We compare these against every home to surface the ones that already feel like you.</p>
+        <p>Share your must-haves, decor dreams, and timing. We listen first.</p>
       </div>
 
       <form className="ntp-form" onSubmit={submit} noValidate>

@@ -156,30 +156,34 @@ export default function ListingCard({ listing, isRenter, isSaved, onSelect, onTo
       </div>
 
       <div className="listing-card-body">
-        <div className="listing-card-topline">
-          <p className="listing-card-subtitle">{listing.location}</p>
-          <div className="listing-card-price">
-            ${listing.rent_price?.toLocaleString()}
-            <span>/mo</span>
-          </div>
+        <div className="listing-card-price">
+          ${listing.rent_price?.toLocaleString()}
+          <span>/mo</span>
         </div>
+        <p className="listing-card-place">{listing.location}</p>
         <h3>{listing.title}</h3>
 
-        <div className="listing-card-meta">
-          <span>{listing.bedrooms === 0 ? "Studio" : `${listing.bedrooms} bed${listing.bedrooms !== 1 ? "s" : ""}`}</span>
-          {listing.bathrooms != null && <span>{listing.bathrooms} bath{listing.bathrooms !== 1 ? "s" : ""}</span>}
-          {listing.sqft && <span>{listing.sqft} sqft</span>}
+        <div className="listing-card-foot">
+          <div className="listing-card-meta">
+            <span>{listing.bedrooms === 0 ? "Studio" : `${listing.bedrooms} bed${listing.bedrooms !== 1 ? "s" : ""}`}</span>
+            {listing.bathrooms != null && <span>{listing.bathrooms} bath{listing.bathrooms !== 1 ? "s" : ""}</span>}
+            {listing.sqft && <span>{listing.sqft} sqft</span>}
+          </div>
+          <button
+            type="button"
+            className="listing-card-go"
+            aria-label="View home"
+            onClick={(e) => { e.stopPropagation(); handleSelect(); }}
+          >
+            <Icon name="arrow-right" />
+          </button>
         </div>
 
-        <div className="listing-card-tags">
-          {amenities.length
-            ? amenities.map((a) => <span key={a} className="listing-tag">{a}</span>)
-            : <span className="listing-tag muted">Flexible terms</span>}
-        </div>
-
-        <button className="listing-card-details-btn" onClick={(e) => { e.stopPropagation(); handleSelect(); }}>
-          View Details
-        </button>
+        {amenities.length > 0 && (
+          <div className="listing-card-tags">
+            {amenities.map((a) => <span key={a} className="listing-tag">{a}</span>)}
+          </div>
+        )}
       </div>
     </div>
   );

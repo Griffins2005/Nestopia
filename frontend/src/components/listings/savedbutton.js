@@ -47,7 +47,7 @@ export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
   return (
     <span> 
       <button className={`icon-btn${saved ? " saved" : ""}`} title={saved ? "Unsave" : "Save"}
-        onClick={toggleSave} style={saved ? { color: "#e54848" } : {}} >
+        onClick={toggleSave} style={saved ? { color: "#0f5e37" } : {}} >
         <FiHeart />
       </button>
       {alertMsg && (
@@ -57,12 +57,11 @@ export default function SavedButton({ listingId, initiallySaved, onUnsave }) {
             left: "50%",
             top: "110%",
             transform: "translateX(-50%)",
-            background: "#fff",
-            color: "#e54848",
+            background: "#ffffff",
+            color: "#0f5e37",
             fontSize: "0.98em",
             borderRadius: "8px",
             padding: "2px 15px",
-            boxShadow: "0 2px 8px #0012",
             zIndex: 12,
             marginTop: 4,
             fontWeight: 600

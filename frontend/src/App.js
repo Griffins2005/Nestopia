@@ -24,9 +24,9 @@ function Toast() {
   return (
     <div style={{
       position: "fixed", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)",
-      background: "var(--ntp-green-700, #0f5f42)", color: "#fff",
+      background: "var(--ntp-green-700, #0f5e37)", color: "#fff",
       padding: "0.6rem 1.4rem", borderRadius: "2rem", fontSize: "0.95rem",
-      fontWeight: 600, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+      fontWeight: 600, zIndex: 9999,
       pointerEvents: "none",
     }}>
       {toast}

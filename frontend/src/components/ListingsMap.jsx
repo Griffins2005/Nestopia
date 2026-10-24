@@ -10,7 +10,7 @@ function formatPinPrice(rent) {
   return `$${rent}`;
 }
 
-export default function ListingsMap({ listings, isRenter, onSelect }) {
+export default function ListingsMap({ listings, isRenter, onSelect, compact = false }) {
   const navigate = useNavigate();
   const mapEl = useRef(null);
   const mapRef = useRef(null);
@@ -82,7 +82,7 @@ export default function ListingsMap({ listings, isRenter, onSelect }) {
   };
 
   return (
-    <div className="listings-map-shell">
+    <div className={`listings-map-shell${compact ? ' is-compact' : ''}`}>
       <div className="listings-map-panel">
         <div ref={mapEl} className="listings-map" />
         {listings.length > 0 && validListings.length === 0 && (
@@ -91,7 +91,7 @@ export default function ListingsMap({ listings, isRenter, onSelect }) {
           </div>
         )}
       </div>
-      <aside className="listings-map-side">
+      {!compact && <aside className="listings-map-side">
         <p className="map-side-label">
           {validListings.length} of {listings.length}{' '}
           {listings.length === 1 ? 'home' : 'homes'} on the map
@@ -139,7 +139,7 @@ export default function ListingsMap({ listings, isRenter, onSelect }) {
             </button>
           ))}
         </div>
-      </aside>
+      </aside>}
     </div>
   );
 }

@@ -1,14 +1,13 @@
 # app/utils/ml_match.py
 """
-AI-Enhanced Matching System
-Combines rule-based scoring with machine learning for smarter matches.
+Hybrid heuristic matcher.
 
-Key improvements:
-1. Learning from user behavior (saves, visits)
-2. Semantic matching for text fields (descriptions, tags)
-3. Adaptive weighting per user
-4. Collaborative filtering signals
-5. Feature engineering for better location/time matching
+This model mixes fixed weights, thresholds on saves and tours, optional text embeddings, and overlap with other renters'
+saves. Learned ranking waits until there is interaction data and a baseline
+worth beating.
+
+Optional embeddings are computed once per listing and once per renter, then
+reused. They are not encoded again inside each comparison.
 """
 
 import numpy as np
@@ -22,13 +21,16 @@ try:
     SEMANTIC_AVAILABLE = True
 except ImportError:
     SEMANTIC_AVAILABLE = False
-    print("Warning: sentence-transformers not installed. Semantic matching disabled.")
 
 
-class SmartMatcher:
-    """
-    Enhanced matching that learns from user behavior and uses ML techniques.
-    """
+def _cosine(left, right) -> float:
+    denom = float(np.linalg.norm(left) * np.linalg.norm(right) + 1e-8)
+    similarity = float(np.dot(left, right) / denom)
+    return (similarity + 1) / 2
+
+
+class HeuristicMatcher:
+    """Fixed-weight matcher with optional embeddings and behavior thresholds."""
     
     def __init__(self, use_semantic: bool = False):
         self.use_semantic = use_semantic and SEMANTIC_AVAILABLE
@@ -36,7 +38,7 @@ class SmartMatcher:
             # Lightweight model for text similarity
             self.semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
         
-        # Base weights (can be learned per-user)
+        # Fixed weights. 
         self.base_weights = {
             "budget": 20,
             "location": 15,
@@ -51,8 +53,8 @@ class SmartMatcher:
             "occupants": 3,
             "custom_tags": 4,
             "landlord_requirements": 8,
-            "behavioral_signal": 15,  # New: learned from user actions
-            "semantic_match": 10,      # New: text similarity
+            "behavioral_signal": 15,
+            "semantic_match": 10,
         }
     
     def compute_enhanced_score(
@@ -61,28 +63,32 @@ class SmartMatcher:
         landlord_prefs,
         listing,
         user_behavior: Optional[Dict] = None,
-        similar_users_prefs: Optional[List] = None
+        similar_users_prefs: Optional[List] = None,
+        listing_vector=None,
+        renter_vector=None,
     ) -> Tuple[float, Dict]:
         """
-        Compute enhanced compatibility score with ML features.
-        
-        Returns:
-            (score, explanation_dict) - score 0-1, and breakdown for transparency
+        Score one pair that already passed hard filters.
+
+        Returns a 0–1 heuristic score and the parts that produced it.
         """
         from app.utils.match import compute_compatibility_score
         
         # 1. Base rule-based score (maintains existing logic)
         base_score = compute_compatibility_score(renter, None, listing)
         
-        # 2. Behavioral signal (learned from user actions)
+        # 2. Thresholds on saves and tours. Neutral when that renter has no history.
         behavioral_boost = self._compute_behavioral_signal(
             renter, listing, user_behavior
         )
-        
-        # 3. Semantic matching (text similarity)
-        semantic_score = self._compute_semantic_match(
-            renter, listing
-        ) if self.use_semantic else 0.5
+
+        # 3. Cosine of embeddings computed once outside this comparison.
+        if self.use_semantic:
+            semantic_score = _cosine(renter_vector, listing_vector) if (
+                renter_vector is not None and listing_vector is not None
+            ) else 0.5
+        else:
+            semantic_score = 0.5
         
         # 4. Collaborative filtering signal
         collab_score = self._compute_collaborative_signal(
@@ -93,7 +99,6 @@ class SmartMatcher:
         location_boost = self._enhanced_location_match(renter, listing)
         timing_boost = self._enhanced_timing_match(renter, listing)
         
-        # Combine signals (weighted ensemble)
         enhanced_score = (
             base_score * 0.60 +  # Base score still primary
             behavioral_boost * 0.20 +
@@ -103,6 +108,7 @@ class SmartMatcher:
         )
         
         explanation = {
+            "matcher": "hybrid_heuristic",
             "base_score": round(base_score, 3),
             "behavioral_boost": round(behavioral_boost, 3),
             "semantic_score": round(semantic_score, 3),
@@ -316,6 +322,93 @@ class SmartMatcher:
             return 0.8
         
         return 0.4
+
+    def _text_parts(self, values) -> List[str]:
+        return [str(value).strip() for value in (values or []) if str(value).strip()]
+
+    def listing_embedding_text(self, listing) -> str:
+        parts = []
+        description = getattr(listing, "description", None)
+        neighborhood = getattr(listing, "neighborhood_description", None)
+        if description:
+            parts.append(str(description))
+        if neighborhood:
+            parts.append(str(neighborhood))
+        parts.extend(self._text_parts(getattr(listing, "custom_tags", None)))
+        return " ".join(parts).strip()
+
+    def renter_embedding_text(self, renter) -> str:
+        parts = []
+        parts.extend(self._text_parts(getattr(renter, "custom_preferences", None)))
+        parts.extend(self._text_parts(getattr(renter, "locations", None)))
+        return " ".join(parts).strip()
+
+    def precompute_listing_embeddings(self, listings) -> Dict[int, object]:
+        """Encode every listing once. Empty text is omitted."""
+        if not self.use_semantic:
+            return {}
+        indexed = []
+        texts = []
+        for listing in listings:
+            text = self.listing_embedding_text(listing)
+            if not text:
+                continue
+            indexed.append(getattr(listing, "id"))
+            texts.append(text)
+        if not texts:
+            return {}
+        vectors = self.semantic_model.encode(texts, convert_to_numpy=True)
+        return {listing_id: vectors[index] for index, listing_id in enumerate(indexed)}
+
+    def precompute_renter_embedding(self, renter):
+        if not self.use_semantic:
+            return None
+        text = self.renter_embedding_text(renter)
+        if not text:
+            return None
+        return self.semantic_model.encode(text, convert_to_numpy=True)
+
+
+# Old name kept so existing imports keep working.
+SmartMatcher = HeuristicMatcher
+
+
+def behavior_from_cache(saved_ids, visit_ids, listing_id: int) -> Dict:
+    """Behavior features for one pair, using sets loaded once per renter."""
+    return {
+        "saved_similarity": 1.0 if listing_id in saved_ids else 0.0,
+        "visit_similarity": 1.0 if listing_id in visit_ids else 0.0,
+        "ignored_similarity": 0.0,
+    }
+
+
+def collaborative_saved_ids(renter_prefs, all_prefs, saved_by_user, limit: int = 10) -> set:
+    """Listing ids saved by renters with overlapping amenities or locations.
+
+    Uses data already loaded for the job. It does not query inside the pair loop.
+    """
+    renter_amenities = set(getattr(renter_prefs, "amenities", []) or [])
+    renter_locations = set(getattr(renter_prefs, "locations", []) or [])
+    ranked = []
+    for other in all_prefs:
+        if other.user_id == renter_prefs.user_id:
+            continue
+        other_amenities = set(getattr(other, "amenities", []) or [])
+        other_locations = set(getattr(other, "locations", []) or [])
+        amenity_overlap = len(renter_amenities & other_amenities) / max(
+            1, len(renter_amenities | other_amenities)
+        )
+        location_overlap = len(renter_locations & other_locations) / max(
+            1, len(renter_locations | other_locations)
+        )
+        similarity = (amenity_overlap + location_overlap) / 2
+        if similarity > 0.3:
+            ranked.append((similarity, other.user_id))
+    ranked.sort(reverse=True)
+    saved = set()
+    for _similarity, user_id in ranked[:limit]:
+        saved.update(saved_by_user.get(user_id, ()))
+    return saved
 
 
 def compute_user_behavior_features(db, user_id: int, listing_id: int) -> Dict:

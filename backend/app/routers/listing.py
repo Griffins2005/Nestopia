@@ -20,6 +20,7 @@ from app.utils.match import compute_compatibility_score, compute_compatibility_b
 from app.utils.listing_helpers import serialize_listing, normalize_listing_input, validate_listing_images
 from app.utils.application_helpers import get_tenant_homes
 from app.core.storage import save_upload
+from app.services.inventory import location_matches, parse_availability, within_hard_budget
 
 router = APIRouter(prefix="/api/listings", tags=["Listings"])
 
@@ -43,17 +44,41 @@ def upload_image(file: UploadFile = File(...)):
     return JSONResponse({"url": url})
 
 
+def _apply_search_filters(listings, max_rent, place, available_by):
+    deadline = None
+    if available_by:
+        deadline = parse_availability(available_by)
+        if deadline is None:
+            raise HTTPException(status_code=400, detail="available_by must be YYYY-MM-DD")
+    kept = []
+    for listing in listings:
+        if max_rent is not None and not within_hard_budget(listing, max_rent):
+            continue
+        if place and not location_matches(listing, place):
+            continue
+        if deadline is not None:
+            available = parse_availability(getattr(listing, "available_from", None))
+            if available is None or available > deadline:
+                continue
+        kept.append(listing)
+    return kept
+
+
 @router.get("")
 @router.get("/")
 def read_all_listings(
     db: Session = Depends(get_db),
     current_user=Depends(get_optional_user),
     view_as_renter: bool = Query(False, description="For landlords: view all listings as a renter would"),
+    max_rent: int = Query(None, ge=0),
+    location: str = Query(None),
+    available_by: str = Query(None, description="YYYY-MM-DD. Listings without that date are excluded."),
 ):
     if current_user and current_user.role == "landlord" and not view_as_renter:
         listings = get_listings_by_landlord(db, current_user.id)
     else:
         listings = get_all_listings(db)
+        listings = _apply_search_filters(listings, max_rent, location, available_by)
 
     renter_prefs = None
     if current_user and (current_user.role == "renter" or (current_user.role == "landlord" and view_as_renter)):

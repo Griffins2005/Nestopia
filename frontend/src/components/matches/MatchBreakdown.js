@@ -25,7 +25,7 @@ export function MatchPercent({ listing, score, className = '' }) {
   return <span className={className}>{pct}% match</span>;
 }
 
-export default function MatchBreakdownCard({ listing, compact = false }) {
+export default function MatchBreakdownCard({ listing, compact = false, bars = false }) {
   const breakdown = getMatchBreakdown(listing);
   const overall = getListingMatchPercent(listing);
   if (!overall) return null;
@@ -33,6 +33,35 @@ export default function MatchBreakdownCard({ listing, compact = false }) {
   const propertyPct = breakdown?.property_fit_percent ?? null;
   const tenantPct = breakdown?.tenant_fit_percent ?? null;
   const propertyParts = breakdown?.property_breakdown || {};
+
+  if (compact && bars) {
+    const entries = Object.entries(propertyParts)
+      .filter(([, value]) => value != null && !Number.isNaN(Number(value)))
+      .slice(0, 3);
+    if (entries.length) {
+      return (
+        <div className="match-breakdown match-breakdown-compact why-fit">
+          <p className="why-fit-label">Why it fits</p>
+          {entries.map(([key, value]) => {
+            const raw = Number(value);
+            const pct = Math.round(raw <= 1 ? raw * 100 : raw);
+            const width = Math.max(0, Math.min(100, pct));
+            return (
+              <div className="match-bar-item" key={key}>
+                <div className="match-bar-label">
+                  <span>{PROPERTY_LABELS[key] || key}</span>
+                  <strong>{pct}%</strong>
+                </div>
+                <div className="match-bar-track">
+                  <div className="match-bar-fill property" style={{ width: `${width}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+  }
 
   if (compact) {
     return (

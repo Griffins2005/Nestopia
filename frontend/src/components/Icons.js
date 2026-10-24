@@ -104,6 +104,24 @@ const ICONS = {
   home: (
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v10h-5v-6H11v6H6V11H3l9-8z"/></svg>
   ),
+  "nav-explore": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.25"/><path d="M14.7 9.3 13.2 13.2 9.3 14.7 10.8 10.8 14.7 9.3z"/></svg>
+  ),
+  "nav-matches": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.2 13.15 6.7 16.7 7.85 13.15 9 12 12.5 10.85 9 7.3 7.85 10.85 6.7 12 3.2z"/><path d="M17.6 13.2 18.25 14.8 19.9 15.45 18.25 16.1 17.6 17.7 16.95 16.1 15.3 15.45 16.95 14.8 17.6 13.2z"/></svg>
+  ),
+  "nav-saved": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19.4s-6.4-3.9-8.2-7.8C2.4 8.6 4.1 5.6 7.2 5.6c1.7 0 3.1.9 3.8 2.2.7-1.3 2.1-2.2 3.8-2.2 3.1 0 4.8 3 3.4 6-1.8 3.9-8.2 7.8-8.2 7.8z"/></svg>
+  ),
+  "nav-profile": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.15"/><path d="M5.6 18.8c1.15-2.55 3.35-3.9 6.4-3.9s5.25 1.35 6.4 3.9"/></svg>
+  ),
+  "nav-add": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+  ),
+  "nav-out": (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 6.5H7A1.5 1.5 0 0 0 5.5 8v8A1.5 1.5 0 0 0 7 17.5h2.5"/><path d="M10.5 12h8"/><path d="M15.5 8.5 19 12l-3.5 3.5"/></svg>
+  ),
 };
 
 export function Icon({ name, className = '', style }) {

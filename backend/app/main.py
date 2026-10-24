@@ -23,6 +23,7 @@ from app.routers import (
     payments,
     preferences,
     security,
+    scout,
     stats,
     tokens,
     users,
@@ -70,6 +71,7 @@ app.include_router(wallet.router)
 app.include_router(blockchain.router)
 app.include_router(stats.router)
 app.include_router(applications.router)
+app.include_router(scout.router)
 
 
 @app.get("/health")

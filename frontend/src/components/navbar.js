@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Icon, RegIcon } from './Icons';
+import { Icon } from './Icons';
 import { useNestopia } from '../context/NestopiaContext';
 
 export default function Navbar() {
   const { user, logout, flashToast } = useNestopia();
   const navigate = useNavigate();
   const location = useLocation();
-  const [q, setQ] = useState('');
-
-  const submit = (e) => {
-    e.preventDefault();
-    navigate(`/listings${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`);
-  };
 
   const handleLogout = () => { logout(); flashToast('Signed out.'); };
-  const iconCls = (path) => `navbar-ntp-icon${location.pathname === path ? ' active' : ''}`;
+
+  const isActive = (path) => {
+    if (path === '/listings') {
+      return location.pathname === '/listings'
+        || (location.pathname.startsWith('/listing/') && location.pathname !== '/listing/new');
+    }
+    return location.pathname === path;
+  };
+
+  const item = (path) => (isActive(path) ? 'is-active' : undefined);
 
   return (
-    <nav className="navbar-ntp">
+    <nav className="navbar-ntp desk-nav">
       <div
-        className="navbar-ntp-left"
+        className="navbar-ntp-brand"
         onClick={() => navigate('/')}
         role="button"
         tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && navigate('/')}
+        onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
       >
         <span className="navbar-ntp-logo">
           <img src="/assets/nestopia-logo.svg" alt="" aria-hidden="true" />
@@ -32,51 +35,32 @@ export default function Navbar() {
         <span className="navbar-ntp-title">Nestopia</span>
       </div>
 
-      <div className="navbar-ntp-center">
-        <form className="navbar-ntp-search-form" onSubmit={submit} role="search">
-          <input
-            className="navbar-ntp-search"
-            placeholder="Search homes, apartments…"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            aria-label="Search"
-          />
-          <button type="submit" className="navbar-ntp-search-btn" aria-label="Search">
-            <Icon name="magnifying-glass" />
-          </button>
-        </form>
-      </div>
-
-      <div className="navbar-ntp-right">
-        <Link to="/listings" className={iconCls('/listings')} title="Explore">
-          <Icon name="compass" />
-        </Link>
-
-        {(!user || user.role === 'renter') && (
-          <Link to={user ? '/matches' : '/login'} className={iconCls('/matches')} title="Your matches">
-            <Icon name="sparkles" />
+      <div className="desk-nav-main">
+        <div className="desk-nav-links">
+          <Link to="/listings" className={item('/listings')}>Explore</Link>
+          {(!user || user.role === 'renter') && (
+            <Link to={user ? '/matches' : '/login'} className={item('/matches')}>Your matches</Link>
+          )}
+          <Link to={user ? '/saved' : '/login'} className={`desk-nav-icon${isActive('/saved') ? ' is-active' : ''}`} aria-label="Saved">
+            <Icon name="nav-saved" />
           </Link>
-        )}
+          {user?.role === 'landlord' && (
+            <Link to="/listing/new" className={item('/listing/new')}>List a place</Link>
+          )}
+        </div>
 
-        {user?.role === 'landlord' && (
-          <Link to="/listing/new" className={iconCls('/listing/new')} title="Add listing">
-            <Icon name="plus" />
+        <div className="desk-nav-end">
+          {user && (
+            <button type="button" className="desk-nav-quiet" onClick={handleLogout}>Sign out</button>
+          )}
+          <Link
+            to={user ? '/profile' : '/login'}
+            className={`desk-nav-login desk-nav-icon${isActive('/profile') ? ' is-active' : ''}`}
+            aria-label={user ? 'Profile' : 'Log in'}
+          >
+            <Icon name="nav-profile" />
           </Link>
-        )}
-
-        <Link to={user ? '/saved' : '/login'} className={iconCls('/saved')} title="Saved">
-          <RegIcon name="heart" />
-        </Link>
-
-        <Link to={user ? '/profile' : '/login'} className={iconCls('/profile')} title={user ? 'Profile' : 'Login'}>
-          <Icon name="circle-user" />
-        </Link>
-
-        {user && (
-          <button className="navbar-ntp-icon logout" title="Sign out" onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-            <Icon name="sign-out" />
-          </button>
-        )}
+        </div>
       </div>
     </nav>
   );

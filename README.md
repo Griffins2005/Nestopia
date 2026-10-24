@@ -204,7 +204,8 @@ Canonical frontend paths live in `frontend/src/api/endpoints.js` — keep in syn
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/matches/daily` | Daily ranked matches (renter) |
+| GET | `/api/matches/daily` | Daily ranked matches (renter). Over-budget listings are dropped before scoring. |
+| POST | `/api/scout` | Deterministic housing search. Hard budget and unknown availability are not relaxed. |
 | GET | `/api/applications/activity` | Activity feed |
 | POST | `/api/applications/from-contact` | Apply from listing contact |
 | POST | `/api/applications/{id}/*` | Withdraw, accept, reject, tours, move-in |
@@ -224,9 +225,15 @@ PostgreSQL in production; SQLite for local dev. Both create tables from the SQLA
 ## Testing
 
 ```bash
-cd backend && pytest
+cd backend && python -m unittest discover -s tests
 cd frontend && npm test
 ```
+
+## Matching
+
+Daily scores are a hybrid heuristic: fixed weights, optional text embeddings, and thresholds on saves and tours. There is no trained ranking model. A stated maximum budget removes a listing before it is scored. When semantic matching is on, each listing and each renter is encoded once.
+
+`POST /api/scout` takes a search such as “Find a room below $800 near Cornell for August 2027–August 2028, including semester alternatives.” Rent, place, and dates are hard filters. A listing whose `available_from` is not `YYYY-MM-DD` is reported as unknown and is not treated as available.
 
 ## Optional: Celery + Redis
 
@@ -237,7 +244,7 @@ celery -A celery_app.celery worker -l info
 celery -A celery_app.celery beat -l info
 ```
 
-Set `USE_ML_MATCHING=true` only if workers are running.
+Set `USE_ML_MATCHING=true` only if workers are running. The flag enables the heuristic matcher, not a learned ranker.
 
 ## Security notes
 
@@ -247,6 +254,6 @@ Set `USE_ML_MATCHING=true` only if workers are running.
 
 ## Known limitations
 
-- Semantic matching needs heavy optional ML deps
-- Minimal test coverage
+- Optional text embeddings need `sentence-transformers`. They are not a trained ranker.
+- Payment, wallet, blockchain, and token routers are still mounted and are outside the rental core
 - Payment/wallet/blockchain routers exist but are not wired in the UI

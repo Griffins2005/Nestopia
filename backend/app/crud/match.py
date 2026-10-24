@@ -4,19 +4,23 @@ from datetime import date
 
 from app.db.models import DailyMatch, Listing, RenterPreferences
 from app.crud.preferences import get_renter_preferences
+from app.services.inventory import within_hard_budget
 from app.utils.match import compute_compatibility_breakdown
 from app.utils.listing_helpers import serialize_listing
 
 
 def _rank_live_matches(db: Session, user, limit: int = 10):
-    """Score all listings on the fly when daily matches haven't run yet."""
+    """Score listings that pass the renter's hard budget."""
     renter_prefs = get_renter_preferences(db, user.id)
     if not renter_prefs:
         return []
 
+    budget_max = getattr(renter_prefs, "budget_max", 0) or 0
     listings = db.query(Listing).options(joinedload(Listing.landlord)).all()
     ranked = []
     for listing in listings:
+        if budget_max and not within_hard_budget(listing, budget_max):
+            continue
         breakdown = compute_compatibility_breakdown(renter_prefs, None, listing)
         score = breakdown["overall"]
         ranked.append((listing, score, breakdown))
@@ -44,28 +48,32 @@ def get_ranked_matches(db: Session, user):
     if not matches:
         return _rank_live_matches(db, user)
 
+    listing_ids = [match.listing_id for match in matches]
+    listings = (
+        db.query(Listing)
+        .options(joinedload(Listing.landlord))
+        .filter(Listing.id.in_(listing_ids))
+        .all()
+    )
+    by_id = {listing.id: listing for listing in listings}
+    renter_prefs = get_renter_preferences(db, user.id)
     ranked = []
     for match in matches:
-        listing = (
-            db.query(Listing)
-            .options(joinedload(Listing.landlord))
-            .filter(Listing.id == match.listing_id)
-            .first()
-        )
-        if listing:
-            renter_prefs = get_renter_preferences(db, user.id)
-            breakdown = None
-            score = float(match.compatibility_score)
-            if renter_prefs:
-                breakdown = compute_compatibility_breakdown(renter_prefs, None, listing)
-                score = breakdown["overall"]
-            ranked.append(
-                serialize_listing(
-                    listing,
-                    match_score=score,
-                    match_breakdown=breakdown,
-                )
+        listing = by_id.get(match.listing_id)
+        if not listing:
+            continue
+        breakdown = None
+        score = float(match.compatibility_score)
+        if renter_prefs:
+            breakdown = compute_compatibility_breakdown(renter_prefs, None, listing)
+            score = breakdown["overall"]
+        ranked.append(
+            serialize_listing(
+                listing,
+                match_score=score,
+                match_breakdown=breakdown,
             )
+        )
     ranked.sort(key=lambda item: item.get("match_score") or 0, reverse=True)
     return ranked[:10]
 

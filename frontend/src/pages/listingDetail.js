@@ -7,7 +7,7 @@ import { NO_LISTINGS, getListingById, getListingImages, listingImageUrl } from '
 import { hostContactChannels, preferredContactChannel, otherContactChannels, contactPreferenceLabel, normalizeContactPreference } from '../api/user';
 import { applyFromContact } from '../api/applications';
 import ListingMiniMap from '../components/ListingMiniMap';
-import { ListingImageCarousel } from '../components/listings/listingCard';
+import { ListingGallery, ListingImageCarousel } from '../components/listings/listingCard';
 import { ListingTenantRequirementsCard, getListingTenantRequirements } from '../components/preferences/display';
 import MatchBreakdownCard, { MatchPercent } from '../components/matches/MatchBreakdown';
 import { getListingMatchPercent, stripMatchFields } from '../api/matches';
@@ -33,9 +33,11 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [matchReady, setMatchReady] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setShowAllPhotos(false);
     setNotFound(false);
     setMatchReady(false);
 
@@ -169,7 +171,15 @@ export default function ListingDetail() {
 
       <div className="detail-grid">
         <div className="detail-main">
-          <ListingImageCarousel images={images} alt={listing.title} variant="detail" />
+          {showAllPhotos ? (
+            <ListingImageCarousel images={images} alt={listing.title} variant="detail" />
+          ) : (
+            <ListingGallery
+              images={images}
+              alt={listing.title}
+              onShowAll={() => setShowAllPhotos(true)}
+            />
+          )}
 
           <div className="detail-header-block">
             <div className="detail-title-line">

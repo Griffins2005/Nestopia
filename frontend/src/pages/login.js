@@ -119,7 +119,7 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }} noValidate>
+      <form className="auth-form" onSubmit={submit} noValidate>
         {needs2fa ? (
           <div className="auth-field">
             <label className="form-label">Authenticator code</label>

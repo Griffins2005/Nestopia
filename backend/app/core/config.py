@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     FRONTEND_URL: str = "http://localhost:3000"
     APP_NAME: str = "Nestopia"
+    # Hybrid heuristic matcher (fixed weights, behavior thresholds, optional embeddings).
+    # Not a trained ranker. USE_ML_MATCHING is the existing env name for that switch.
     USE_ML_MATCHING: bool = False
     USE_SEMANTIC_MATCHING: bool = False
 

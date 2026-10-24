@@ -25,6 +25,7 @@ services:
         value: https://nestopia-rental.vercel.app
       - key: PORT
         value: "10000"
+      # Hybrid heuristic only. Leave off until a worker is running.
       - key: USE_ML_MATCHING
         value: "false"
       - key: USE_SEMANTIC_MATCHING

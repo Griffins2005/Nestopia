@@ -97,7 +97,7 @@ export default function Onboarding() {
       <div className="form-head">
         <p className="eyebrow">Almost there</p>
         <h1>Tell us your vibe</h1>
-        <p>Help us personalise your matches right from day one.</p>
+        <p>Share your must-haves, decor dreams, and timing. We listen first.</p>
       </div>
 
       <form className="ntp-form" onSubmit={submit} noValidate>

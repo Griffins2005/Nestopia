@@ -138,7 +138,7 @@ export default function ListingDetail() {
             {listing.rating && (
               <>
                 {" · "}
-                <FaStar color="#FFC120" style={{ marginRight: 1 }} />
+                <FaStar color="#1c9c5f" style={{ marginRight: 1 }} />
                 {listing.rating} ({listing.num_reviews} reviews)
               </>
             )}
