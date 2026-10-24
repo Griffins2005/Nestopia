@@ -1,0 +1,48 @@
+# Nestopia API on Render. Frontend stays on Vercel.
+# Dashboard: New → Blueprint → connect this repo.
+# Persistent uploads require a paid web service (disk is not available on free).
+services:
+  - type: web
+    name: nestopia-api
+    runtime: docker
+    plan: 0.5c-512mb
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    preDeployCommand: alembic upgrade head
+    disk:
+      name: uploads
+      mountPath: /data/uploads
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nestopia-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://nestopia-rental.vercel.app
+      - key: CORS_ORIGINS
+        value: https://nestopia-rental.vercel.app
+      - key: UPLOADS_DIR
+        value: /data/uploads
+      - key: PORT
+        value: "10000"
+      - key: USE_ML_MATCHING
+        value: "false"
+      - key: USE_SEMANTIC_MATCHING
+        value: "false"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+databases:
+  - name: nestopia-db
+    plan: free
+    databaseName: nestopia
+    region: oregon

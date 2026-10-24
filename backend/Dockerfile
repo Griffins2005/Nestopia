@@ -18,7 +18,7 @@ ENV UPLOADS_DIR=/data/uploads
 
 RUN chmod +x start.sh
 
-ENV PORT=8000
+# Render injects PORT (10000 in render.yaml). Local Docker falls back to 8000 in start.sh.
 EXPOSE 8000
 
 CMD ["./start.sh"]

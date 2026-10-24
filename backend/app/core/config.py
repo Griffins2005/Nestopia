@@ -1,10 +1,10 @@
 # app/core/config.py
-import os
 from typing import List, Optional
 
 from pydantic import BaseSettings, root_validator, validator
 
-from app.core.db_url import normalize_database_url, resolve_database_url_from_env
+from app.core.db_url import resolve_database_url_from_env
+from app.core.hosting import inferred_api_public_url, on_render
 
 _PLACEHOLDER_SECRETS = {
     "change-me-long-random-string",
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     GOOGLE_REDIRECT_URI: Optional[str] = None
 
-    # Railway volume mount path (default /data/uploads on Railway when unset)
+    # Persistent upload disk. render.yaml mounts this at /data/uploads.
     UPLOADS_DIR: Optional[str] = None
 
     class Config:
@@ -92,16 +92,16 @@ class Settings(BaseSettings):
     @root_validator
     def apply_platform_defaults(cls, values):
         db = (values.get("DATABASE_URL") or "").lower()
-        on_railway = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"))
+        hosted = on_render()
 
-        if on_railway and "sqlite" in db:
+        if hosted and "sqlite" in db:
             raise ValueError(
-                "SQLite does not work on Railway. Add PostgreSQL in Railway, then set "
-                "DATABASE_URL=${{Postgres.DATABASE_URL}} on this service."
+                "SQLite does not work on Render. Attach PostgreSQL and set DATABASE_URL "
+                "to that database."
             )
 
         is_postgres = "postgres" in db
-        if is_postgres or on_railway:
+        if is_postgres or hosted:
             for key in ("SECRET_KEY", "SESSION_SECRET_KEY"):
                 val = values.get(key) or ""
                 if val in _PLACEHOLDER_SECRETS or len(val) < 32:
@@ -110,9 +110,10 @@ class Settings(BaseSettings):
                         'Generate: python -c "import secrets; print(secrets.token_urlsafe(48))"'
                     )
 
-        railway_host = os.getenv("RAILWAY_PUBLIC_DOMAIN")
-        if railway_host and not values.get("API_PUBLIC_URL"):
-            values["API_PUBLIC_URL"] = f"https://{railway_host}"
+        if not values.get("API_PUBLIC_URL"):
+            inferred = inferred_api_public_url()
+            if inferred:
+                values["API_PUBLIC_URL"] = inferred
 
         frontend = (values.get("FRONTEND_URL") or "").strip().rstrip("/")
         api_public = (values.get("API_PUBLIC_URL") or "").strip().rstrip("/")

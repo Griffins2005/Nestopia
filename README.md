@@ -2,7 +2,7 @@
 
 Nestopia is a full-stack rental housing platform that matches renters with landlords based on housing preferences, property features, and per-listing tenant requirements. Compatibility is shown as a percentage on listings, detail pages, and a daily matches feed.
 
-**Live:** [nestopia-rental.vercel.app](https://nestopia-rental.vercel.app) · API: `https://nestopia-production.up.railway.app`
+**Live:** [nestopia-rental.vercel.app](https://nestopia-rental.vercel.app) · API: Render web service (`nestopia-api`, see Production)
 
 ## Quick start
 
@@ -61,7 +61,8 @@ Tenant requirements are **listing-specific** (not global landlord prefs).
 
 ```
 Nestopia/
-├── backend/          # FastAPI — app/, alembic/, Dockerfile, railway.toml
+├── backend/          # FastAPI — app/, alembic/, Dockerfile
+├── render.yaml       # Render Blueprint (API + Postgres + upload disk)
 ├── frontend/         # React — src/api/endpoints.js = canonical API paths
 ├── backend/.env.example
 └── frontend/.env.example
@@ -82,73 +83,48 @@ Nestopia/
 
 | File | Use |
 |------|-----|
-| `backend/.env.example` | Copy to `backend/.env` for local dev; production vars go in **Railway** |
+| `backend/.env.example` | Copy to `backend/.env` for local dev; production vars go in **Render** |
 | `frontend/.env.example` | Optional local overrides; production: **Vercel** `REACT_APP_API_BASE_URL` |
 
 Never commit `.env` files.
 
-### Production (Railway + Vercel)
+### Production (Render + Vercel)
 
-**Railway** (root directory `backend`, PostgreSQL required):
+The API is a long-running FastAPI process with Postgres and a disk for photos. That matches a **Render web service**. Vercel stays the frontend host. Vercel’s serverless functions do not keep an upload disk or a Celery worker, so the API is not deployed there.
 
-```env
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-SECRET_KEY=<random 32+ chars>
-SESSION_SECRET_KEY=<random 32+ chars>
-FRONTEND_URL=https://nestopia-rental.vercel.app
-CORS_ORIGINS=https://nestopia-rental.vercel.app
-API_PUBLIC_URL=https://nestopia-production.up.railway.app
-COOKIE_SECURE=true
-COOKIE_SAMESITE=none
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://nestopia-production.up.railway.app/api/auth/google/callback
-UPLOADS_DIR=/data/uploads
-```
+`render.yaml` at the repo root defines:
 
-**Persistent uploads (Railway volume — stays on Railway, no extra vendor):**
+- Web service `nestopia-api` — Docker build from `backend/`, health check `/health`, `alembic upgrade head` before each start
+- Postgres `nestopia-db` on the free plan. Free databases expire 30 days after creation, then you have 14 days to upgrade before Render deletes the data. Move to a paid database plan before that if this data should stay.
+- 1 GB disk mounted at `/data/uploads` (requires the paid `0.5c-512mb` web plan; free instances cannot attach a disk)
 
-Railway **does not** put volumes under Settings anymore. You add them from the **project canvas** (the diagram with your services):
+**Deploy**
 
-1. Open your Railway **project** (not just the service logs).
-2. **Right-click** empty space on the canvas → **Add volume**  
-   **or** press **⌘K** (Mac) / **Ctrl+K** (Windows) → search **“Volume”** → create one.
-3. When prompted, select your **Nestopia API service**.
-4. Set **Mount path** to `/data/uploads`.
-5. Redeploy the API service.
+1. Push this repo to GitHub.
+2. In [Render](https://dashboard.render.com), choose **New → Blueprint** and select the repo.
+3. When prompted, paste `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (leave them blank only if you are not using Google login).
+4. Apply the Blueprint. Render creates the API and database and sets `DATABASE_URL`, `SECRET_KEY`, and `SESSION_SECRET_KEY`.
+5. Open the `nestopia-api` service and copy its URL, for example `https://nestopia-api.onrender.com`.
 
-After deploy, logs should show: `Upload storage: Railway volume mounted at /data/uploads`.
+Logs should include `Upload storage: Render disk at /data/uploads`.
 
-**CLI alternative** (from repo, linked to the API service):
+The Blueprint creates a new empty database and an empty upload disk. Accounts, listings, and photos start over; sign up again and re-upload images.
 
-```bash
-railway link
-railway volume add --mount-path /data/uploads
-```
-
-**Plan note:** Volumes require a **Hobby** (or Pro) plan. On the **Free** tier, the Volume option is hidden / unavailable — upgrade the project to Hobby if you do not see it.
-
-If the container runs as non-root, add variable `RAILWAY_RUN_UID=0` on the API service.
-
-Re-upload listing photos and profile pics once after the volume is attached (earlier files were on ephemeral disk).
-
-Use `backend/Dockerfile` + `backend/railway.toml`. Clear custom start commands. After deploy: `alembic upgrade head`.
-
-**Vercel** (root directory `frontend`):
+**Vercel** (root directory `frontend`). `REACT_APP_*` is baked in at build time, so change the variable and redeploy:
 
 ```env
-REACT_APP_API_BASE_URL=https://nestopia-production.up.railway.app
+REACT_APP_API_BASE_URL=https://nestopia-api.onrender.com
 ```
 
-Include `https://` — without it, requests incorrectly go to `vercel.app/nestopia-production...` and return **405**.
+Include `https://`. Without it, the browser requests `vercel.app/nestopia-api...` and gets **405**.
 
-**Google OAuth** — JavaScript origins: Vercel URL + `http://localhost:3000`. Redirect URI on the **API**: `/api/auth/google/callback`.
+**Google OAuth** — JavaScript origins: the Vercel URL and `http://localhost:3000`. Authorized redirect URI: `https://<your-onrender-host>/api/auth/google/callback`. The API builds that callback from `RENDER_EXTERNAL_URL` when `GOOGLE_REDIRECT_URI` is unset.
 
 ### After deploy — verify
 
 ```bash
-curl https://nestopia-production.up.railway.app/health
-curl -sI -X OPTIONS 'https://nestopia-production.up.railway.app/api/listings/' \
+curl https://nestopia-api.onrender.com/health
+curl -sI -X OPTIONS 'https://nestopia-api.onrender.com/api/listings/' \
   -H 'Origin: https://nestopia-rental.vercel.app' \
   -H 'Access-Control-Request-Method: GET'
 # Expect: access-control-allow-origin: https://nestopia-rental.vercel.app
@@ -156,10 +132,10 @@ curl -sI -X OPTIONS 'https://nestopia-production.up.railway.app/api/listings/' \
 
 In the browser (DevTools → Network):
 
-1. API calls go to `https://nestopia-production.up.railway.app/...` (not under `vercel.app/...`)
+1. API calls go to `https://nestopia-api.onrender.com/...` (not under `vercel.app/...`)
 2. `POST /api/auth/login` → 200, then `GET /api/users/me` → 200
 3. `PATCH /api/users/me` → 200 when saving profile
-4. Cookie `nestopia_session` appears under the Railway domain after login
+4. Cookie `nestopia_session` appears under the Render domain after login
 
 ## API reference
 
@@ -267,7 +243,7 @@ Set `USE_ML_MATCHING=true` only if workers are running.
 
 - Rotate secrets in production; use HTTPS cookies (`COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` for split deploy)
 - Do not commit `.env`, `nestopia_dev.db`, or `uploads/`
-- On Railway, attach a volume at `/data/uploads` so uploads survive redeploys (see Production section)
+- On Render, the Blueprint disk at `/data/uploads` keeps uploads across deploys (see Production section)
 
 ## Known limitations
 

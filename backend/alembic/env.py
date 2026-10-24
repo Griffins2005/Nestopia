@@ -7,11 +7,13 @@ from app.db.session import SQLALCHEMY_DATABASE_URL
 from app.db.models import Base
 
 def get_url():
-    return os.getenv("DATABASE_URL", SQLALCHEMY_DATABASE_URL)
+    # session.py already rewrites postgres:// (Render) to postgresql+psycopg2://.
+    return SQLALCHEMY_DATABASE_URL
 
 config = context.config
 fileConfig(config.config_file_name)
-config.set_main_option("sqlalchemy.url", get_url())
+# ConfigParser treats % as interpolation. Escape passwords from hosted Postgres URLs.
+config.set_main_option("sqlalchemy.url", get_url().replace("%", "%%"))
 
 target_metadata = Base.metadata
 

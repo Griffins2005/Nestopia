@@ -1,4 +1,4 @@
-"""Upload storage on local disk or a Railway-mounted volume."""
+"""Upload storage on local disk or the Render disk."""
 
 from __future__ import annotations
 
@@ -9,30 +9,23 @@ from typing import BinaryIO, Union
 from uuid import uuid4
 
 from app.core.config import settings
+from app.core.hosting import on_render
 
 logger = logging.getLogger("uvicorn.error")
 
 FileLike = Union[BinaryIO, bytes]
 
-# Mount Railway volumes at this path (Settings → Volumes → Mount path).
-RAILWAY_UPLOADS_DEFAULT = "/data/uploads"
-
-
-def _on_railway() -> bool:
-    return bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"))
+# render.yaml disk mountPath.
+HOSTED_UPLOADS_DEFAULT = "/data/uploads"
 
 
 def get_uploads_root() -> Path:
-    # Railway injects this when a volume is attached to the service.
-    railway_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
     configured = (settings.UPLOADS_DIR or "").strip()
 
-    if railway_mount:
-        root = Path(railway_mount)
-    elif configured:
+    if configured:
         root = Path(configured)
-    elif _on_railway():
-        root = Path(RAILWAY_UPLOADS_DEFAULT)
+    elif on_render():
+        root = Path(HOSTED_UPLOADS_DEFAULT)
     else:
         root = Path(__file__).resolve().parent.parent.parent / "uploads"
 
@@ -64,21 +57,11 @@ def save_upload(subdir: str, filename: str, data: FileLike) -> str:
 
 def log_storage_mode() -> None:
     root = get_uploads_root()
-    if not _on_railway():
+    if not on_render():
         logger.info("Upload storage: %s", root)
         return
 
-    railway_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
-    if railway_mount:
-        logger.info("Upload storage: Railway volume mounted at %s", railway_mount)
-    elif (settings.UPLOADS_DIR or "").strip():
-        logger.info("Upload storage: UPLOADS_DIR=%s", settings.UPLOADS_DIR)
-    else:
-        logger.warning(
-            "Upload storage: %s — no Railway volume detected (RAILWAY_VOLUME_MOUNT_PATH unset). "
-            "Add a volume via the project canvas (⌘K → Volume) or upgrade to Hobby if unavailable.",
-            root,
-        )
+    logger.info("Upload storage: Render disk at %s", root)
 
     # Fail fast if the mount is not writable — avoids silent upload loss.
     probe = root / ".write_probe"

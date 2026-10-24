@@ -1,9 +1,11 @@
-"""Normalize and validate DATABASE_URL for SQLAlchemy (Railway Postgres, local SQLite)."""
+"""Normalize and validate DATABASE_URL for SQLAlchemy (hosted Postgres, local SQLite)."""
 from __future__ import annotations
 
 import os
 import re
 from urllib.parse import quote_plus, unquote, urlparse, urlunparse
+
+from app.core.hosting import on_render
 
 
 def _encode_password_in_url(url: str) -> str:
@@ -36,24 +38,22 @@ def _verify_parseable(url: str) -> str:
 
 def normalize_database_url(raw: str | None) -> str:
     value = (raw or "").strip().strip('"').strip("'")
-    on_railway = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"))
+    hosted = on_render()
 
     if not value:
         raise ValueError(
-            "DATABASE_URL is missing. On Railway: add PostgreSQL to the project, open your "
-            "API service → Variables → Add Variable → Reference → select Postgres → DATABASE_URL."
+            "DATABASE_URL is missing. On Render it comes from the nestopia-db database in render.yaml."
         )
 
     if "${" in value:
         raise ValueError(
-            f"DATABASE_URL looks unresolved ({value!r}). In Railway, use the Reference picker "
-            "to link Postgres — do not paste ${{Postgres.DATABASE_URL}} as plain text."
+            f"DATABASE_URL looks unresolved ({value!r}). Link the Postgres instance in the "
+            "host dashboard instead of pasting a template string."
         )
 
-    if on_railway and "sqlite" in value.lower():
+    if hosted and "sqlite" in value.lower():
         raise ValueError(
-            "SQLite does not work on Railway. Remove sqlite DATABASE_URL and reference "
-            "PostgreSQL instead."
+            "SQLite does not work on Render. Point DATABASE_URL at PostgreSQL."
         )
 
     url = _to_sqlalchemy_driver(value)
@@ -65,18 +65,16 @@ def normalize_database_url(raw: str | None) -> str:
             return _verify_parseable(url)
         except Exception as exc:
             raise ValueError(
-                "DATABASE_URL could not be parsed for SQLAlchemy. On Railway, open your API "
-                "service Variables and ensure DATABASE_URL references the Postgres plugin "
-                f"(not sqlite or localhost). Detail: {exc}"
+                "DATABASE_URL could not be parsed for SQLAlchemy. It must be a Postgres URL "
+                f"from Render, not sqlite or localhost. Detail: {exc}"
             ) from exc
 
 
 def resolve_database_url_from_env(explicit: str | None = None) -> str:
-    """Prefer explicit settings value, then standard Railway / Postgres env names."""
+    """Prefer explicit settings value, then standard Postgres env names."""
     candidates = [
         explicit,
         os.environ.get("DATABASE_URL"),
-        os.environ.get("DATABASE_PRIVATE_URL"),
         os.environ.get("POSTGRES_URL"),
     ]
     pg_user = os.environ.get("PGUSER") or os.environ.get("POSTGRES_USER")

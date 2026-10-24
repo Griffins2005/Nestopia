@@ -1,7 +1,5 @@
 #app/main.py
 import logging
-import os
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -10,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
+from app.core.hosting import on_render
 from app.core.storage import get_uploads_root, log_storage_mode
 from app.db.dev_migrations import ensure_listing_tenant_columns, ensure_user_security_columns
 from app.db.session import Base, engine
@@ -32,12 +31,11 @@ from app.routers import (
 
 app = FastAPI(title="Nestopia API")
 
-BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 UPLOADS_DIR = get_uploads_root()
 app.mount("/static", StaticFiles(directory=str(UPLOADS_DIR)), name="static")
 
 origins = settings.cors_origins_list()
-if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+if on_render():
     logging.getLogger("uvicorn.error").info("CORS allow_origins: %s", origins)
 
 app.add_middleware(

@@ -17,7 +17,7 @@ function normalizeApiBaseUrl(raw) {
   if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.error(
-      `[Nestopia] REACT_APP_API_BASE_URL must be a full URL (e.g. https://nestopia-production.up.railway.app). Got: "${trimmed}"`,
+      `[Nestopia] REACT_APP_API_BASE_URL must be a full URL (e.g. https://nestopia-api.onrender.com). Got: "${trimmed}"`,
     );
   }
   return trimmed;
