@@ -14,10 +14,14 @@ export default function Listings() {
   const initialQuery = searchParams.get('q') || '';
 
   const [query, setQuery] = useState(initialQuery);
+  const [maxRent, setMaxRent] = useState(searchParams.get('max') || '');
+  const [propertyType, setPropertyType] = useState(searchParams.get('type') || '');
+  const [beds, setBeds] = useState('');
+  const [sort, setSort] = useState('default');
   const [view, setView] = useState('grid');
   const [viewAsRenter, setViewAsRenter] = useState(false);
 
-  useEffect(() => { setQuery(searchParams.get('q') || ''); }, [searchParams]);
+  useEffect(() => { setQuery(searchParams.get('q') || ''); setMaxRent(searchParams.get('max') || ''); setPropertyType(searchParams.get('type') || ''); }, [searchParams]);
 
   const isLandlord = user?.role === 'landlord';
 
@@ -34,14 +38,17 @@ export default function Listings() {
     if (isLandlordView && user?.email) {
       base = listings.filter((l) => l.host?.email === user.email || l.landlord_id === user.id);
     }
-    if (!query.trim()) return base;
-    const q = query.toLowerCase();
-    return base.filter(
+    if (propertyType) base = base.filter(l => l.property_type?.toLowerCase() === propertyType.toLowerCase());
+    if (maxRent) base = base.filter(l => l.rent_price != null && Number(l.rent_price) <= Number(maxRent));
+    if (beds !== '') base = base.filter(l => l.bedrooms != null && Number(l.bedrooms) === Number(beds));
+    const q = query.trim().toLowerCase();
+    base = base.filter(
       (l) => l.title?.toLowerCase().includes(q) || l.location?.toLowerCase().includes(q)
     );
-  }, [listings, query, isLandlordView, user?.email, user?.id]);
+    return sort === 'default' ? base : [...base].sort((a,b) => sort === 'low' ? Number(a.rent_price) - Number(b.rent_price) : Number(b.rent_price) - Number(a.rent_price));
+  }, [listings, query, maxRent, propertyType, beds, sort, isLandlordView, user?.email, user?.id]);
 
-  const hasSearchQuery = Boolean(query.trim());
+  const hasSearchQuery = Boolean(query.trim() || maxRent || propertyType || beds !== '');
   const showFallback = listingsStatus === 'loading' || listingsStatus === 'unavailable' || filtered.length === 0;
 
   const fallback = getListingsEmptyState({
@@ -49,7 +56,7 @@ export default function Listings() {
     isLandlordView,
     hasSearchQuery,
     onAddListing: () => navigate('/listing/new'),
-    onClearSearch: () => setQuery(''),
+    onClearSearch: () => { setQuery(''); setMaxRent(''); setBeds(''); setPropertyType(''); },
   });
 
   const renderContent = () => {
@@ -95,14 +102,14 @@ export default function Listings() {
     <div className={`listings-shell${isLandlordView ? ' listings-shell-landlord' : ''}`}>
       <section className="listings-hero">
         <div className="listings-hero-text">
-          <p className="eyebrow eyebrow-muted">Curated for you</p>
+          <p className="eyebrow eyebrow-muted">ROOM FOR YOUR NEXT CHAPTER</p>
           <h1>
-            {isLandlordView ? 'My Listings' : 'Available Listings'}
+            {isLandlordView ? 'My Listings' : 'Find your place.'}
           </h1>
           <p>
             {isLandlordView
               ? 'Manage your property listings and view inquiries.'
-              : 'Find your next home from our curated selection of high-match rentals.'}
+              : 'Explore homes with your budget and priorities in mind.'}
           </p>
         </div>
         <div className="listings-hero-toolbar">
@@ -120,7 +127,7 @@ export default function Listings() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for homes, apartments..."
+              aria-label="Search listings" placeholder="City, neighborhood, or keyword"
             />
           </div>
           <div className="view-toggle">
@@ -135,7 +142,7 @@ export default function Listings() {
         </div>
       </section>
 
-      {renderContent()}
+      <div className="nest-filters"><label>Property type<select value={propertyType} onChange={e=>setPropertyType(e.target.value)}><option value="">All types</option><option value="apartment">Apartment</option><option value="house">House</option></select></label><label>Monthly budget<select value={maxRent} onChange={e=>setMaxRent(e.target.value)}><option value="">Any budget</option><option value="800">Up to $800</option><option value="1500">Up to $1,500</option><option value="2500">Up to $2,500</option><option value="4000">Up to $4,000</option></select></label><label>Bedrooms<select value={beds} onChange={e=>setBeds(e.target.value)}><option value="">Any bedrooms</option><option value="0">Studio</option><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option></select></label><label>Sort by<select value={sort} onChange={e=>setSort(e.target.value)}><option value="default">Default order</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></label>{hasSearchQuery && <button onClick={()=>{setQuery('');setMaxRent('');setBeds(''); setPropertyType('');}}>Clear filters</button>}<span className="nest-result-count" role="status">{listingsStatus === 'loading' ? 'Loading homes…' : `${filtered.length} homes found`}</span></div>{renderContent()}
     </div>
   );
 }

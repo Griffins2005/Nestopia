@@ -135,7 +135,7 @@ export default function ListingCard({ listing, isRenter, isSaved, onSelect, onTo
   };
 
   return (
-    <div className="listing-card" onClick={handleSelect}>
+    <div className="listing-card">
       <div className="listing-card-img-row">
         <ListingImageCarousel images={images} alt={listing.title} variant="card" />
         {isRenter && matchScore > 0 && (
@@ -149,9 +149,7 @@ export default function ListingCard({ listing, isRenter, isSaved, onSelect, onTo
           >
             {isSaved ? <Icon name="heart" /> : <RegIcon name="heart" />}
           </button>
-          <button aria-label="Share listing" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            <Icon name="arrow-up-from-bracket" />
-          </button>
+
         </div>
       </div>
 

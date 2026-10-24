@@ -67,8 +67,8 @@ export function unsaveListing(listingId) {
 /** Calm, unified empty-state copy for listings / matches / saved. */
 export const NO_LISTINGS = {
   icon: 'compass',
-  title: 'No matches or listings right now',
-  description: 'Try again later.',
+  title: 'No homes to show yet',
+  description: 'There are no published homes here right now. Try browsing again later.',
 };
 
 export const NO_MATCHES = {
@@ -86,13 +86,15 @@ export function getListingsEmptyState({
 }) {
   if (listingsStatus === 'loading') return { type: 'loading' };
 
+  if (listingsStatus === 'unavailable') return { type: 'empty', icon: 'compass', title: 'We couldn’t load homes', description: 'The listing service is unavailable. Please try again shortly.' };
+
   if (hasSearchQuery) {
     return {
       type: 'empty',
       icon: 'magnifying-glass',
       title: 'No homes match that search',
-      description: 'Try a different keyword or clear your search.',
-      primaryAction: onClearSearch ? { label: 'Clear search', onClick: onClearSearch } : undefined,
+      description: 'Try a wider budget, different bedroom count, or another neighborhood.',
+      primaryAction: onClearSearch ? { label: 'Clear filters', onClick: onClearSearch } : undefined,
     };
   }
 

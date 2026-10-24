@@ -1,14 +1,3 @@
 import React from 'react';
-
-export default function Footer() {
-  return (
-    <footer className="home-footer">
-      <div>
-        <p style={{ margin: "0 0 0.4rem" }}>Have questions?</p>
-        <a href="/about">Learn more</a>
-        <a href="mailto:support@nestopia.com">Contact us</a>
-      </div>
-      <small>© {new Date().getFullYear()} Nestopia. All rights reserved.</small>
-    </footer>
-  );
-}
+import { Link } from 'react-router-dom';
+export default function Footer(){return <footer className="nest-footer"><div><Link className="nest-brand" to="/">⌂ nestopia.</Link><p>A place for your next chapter.</p></div><nav aria-label="Footer navigation"><Link to="/listings">Explore homes</Link><Link to="/preferences">Your preferences</Link><Link to="/listing/new">List a property</Link></nav><small>© {new Date().getFullYear()} Nestopia</small></footer>;}
