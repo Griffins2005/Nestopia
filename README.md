@@ -2,6 +2,8 @@
 
 Nestopia is a full-stack rental housing platform that matches renters with landlords based on housing preferences, property features, and per-listing tenant requirements. Compatibility is shown as a percentage on listings, detail pages, and a daily matches feed.
 
+The interface is milk white and green. Home welcomes people in and does not include a search form. Explore filters by place, budget, and a move-in date you can type or pick from a calendar. In the navbar, Nestopia sits on the left, Explore and Your matches are words, and Saved and Log in are icons.
+
 **Live:** [nestopia-rental.vercel.app](https://nestopia-rental.vercel.app) · API: [nestopia-api-5fod.onrender.com](https://nestopia-api-5fod.onrender.com)
 
 ## Quick start
@@ -204,8 +206,8 @@ Canonical frontend paths live in `frontend/src/api/endpoints.js` — keep in syn
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/matches/daily` | Daily ranked matches (renter). Over-budget listings are dropped before scoring. |
-| POST | `/api/scout` | Deterministic housing search. Hard budget and unknown availability are not relaxed. |
+| GET | `/api/matches/daily` | Daily ranked matches (renter). Listings above the stated budget are left out before scoring. |
+| POST | `/api/scout` | Search by rent, place, and dates. A listing above the stated budget is left out. An undated available-from stays unknown. |
 | GET | `/api/applications/activity` | Activity feed |
 | POST | `/api/applications/from-contact` | Apply from listing contact |
 | POST | `/api/applications/{id}/*` | Withdraw, accept, reject, tours, move-in |
@@ -233,7 +235,7 @@ cd frontend && npm test
 
 Daily scores are a hybrid heuristic: fixed weights, optional text embeddings, and thresholds on saves and tours. There is no trained ranking model. A stated maximum budget removes a listing before it is scored. When semantic matching is on, each listing and each renter is encoded once.
 
-`POST /api/scout` takes a search such as “Find a room below $800 near Cornell for August 2027–August 2028, including semester alternatives.” Rent, place, and dates are hard filters. A listing whose `available_from` is not `YYYY-MM-DD` is reported as unknown and is not treated as available.
+`POST /api/scout` takes a search such as “Find a room below $800 near Cornell for August 2027–August 2028, including semester alternatives.” Rent, place, and dates stay fixed. A listing whose `available_from` is not `YYYY-MM-DD` is reported as unknown and is not treated as available.
 
 ## Optional: Celery + Redis
 
@@ -255,5 +257,4 @@ Set `USE_ML_MATCHING=true` only if workers are running. The flag enables the heu
 ## Known limitations
 
 - Optional text embeddings need `sentence-transformers`. They are not a trained ranker.
-- Payment, wallet, blockchain, and token routers are still mounted and are outside the rental core
-- Payment/wallet/blockchain routers exist but are not wired in the UI
+- Payment, wallet, blockchain, and token routers are still mounted. They sit outside the rental screens.

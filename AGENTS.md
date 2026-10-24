@@ -18,5 +18,5 @@ Standard commands for lint/test/build are documented in the project `README.md`.
 - **bcrypt/passlib compatibility**: `bcrypt>=5.0` is incompatible with `passlib 1.7.4`. Pin `bcrypt<5` (e.g. `bcrypt==4.2.1`) or password hashing will fail with "password_too_long" errors.
 - **Google OAuth placeholders**: `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are required env vars (no defaults). Use placeholder values in `.env` for local dev if you only need email/password auth.
 - **Listing creation requires user name**: The `LandlordOut` schema rejects `None` for the `name` field. After signup, update the user profile name via `PATCH /api/users/me` before creating listings, or listing serialization will fail with a 500 error.
-- **No test suites**: The repository has no existing backend or frontend tests. `pytest` and `npm test` both report no tests found.
+- **Tests**: Backend tests live in `backend/tests`. From `backend/`, run `python -m unittest discover -s tests`. The frontend has no test suite yet, so `npm test` reports none found.
 - **Frontend proxy**: `package.json` sets `"proxy": "http://localhost:8000"` so API calls from the React dev server are forwarded to the backend automatically.
