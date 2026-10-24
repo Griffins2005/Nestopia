@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     GOOGLE_REDIRECT_URI: Optional[str] = None
 
-    # Persistent upload disk. render.yaml mounts this at /data/uploads.
+    # Upload directory. The Docker image uses /data/uploads; Render free does not keep it.
     UPLOADS_DIR: Optional[str] = None
 
     class Config:

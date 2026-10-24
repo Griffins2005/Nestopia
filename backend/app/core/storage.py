@@ -1,4 +1,4 @@
-"""Upload storage on local disk or the Render disk."""
+"""Upload storage on local disk. Render's free filesystem is wiped on sleep and redeploy."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ logger = logging.getLogger("uvicorn.error")
 
 FileLike = Union[BinaryIO, bytes]
 
-# render.yaml disk mountPath.
+# Directory inside the container. Render free has no persistent disk.
 HOSTED_UPLOADS_DEFAULT = "/data/uploads"
 
 
@@ -61,7 +61,10 @@ def log_storage_mode() -> None:
         logger.info("Upload storage: %s", root)
         return
 
-    logger.info("Upload storage: Render disk at %s", root)
+    logger.info(
+        "Upload storage: %s — ephemeral on Render free; files are lost when the service sleeps or redeploys",
+        root,
+    )
 
     # Fail fast if the mount is not writable — avoids silent upload loss.
     probe = root / ".write_probe"

@@ -62,7 +62,7 @@ Tenant requirements are **listing-specific** (not global landlord prefs).
 ```
 Nestopia/
 ├── backend/          # FastAPI — app/, alembic/, Dockerfile
-├── render.yaml       # Render Blueprint (API + Postgres + upload disk)
+├── render.yaml       # Render Blueprint (free API + free Postgres)
 ├── frontend/         # React — src/api/endpoints.js = canonical API paths
 ├── backend/.env.example
 └── frontend/.env.example
@@ -90,25 +90,29 @@ Never commit `.env` files.
 
 ### Production (Render + Vercel)
 
-The API is a long-running FastAPI process with Postgres and a disk for photos. That matches a **Render web service**. Vercel stays the frontend host. Vercel’s serverless functions do not keep an upload disk or a Celery worker, so the API is not deployed there.
+The API runs as a **free Render web service**. Vercel stays the frontend host. No payment method is required.
 
 `render.yaml` at the repo root defines:
 
-- Web service `nestopia-api` — Docker build from `backend/`, health check `/health`, `alembic upgrade head` before each start
-- Postgres `nestopia-db` on the free plan. Free databases expire 30 days after creation, then you have 14 days to upgrade before Render deletes the data. Move to a paid database plan before that if this data should stay.
-- 1 GB disk mounted at `/data/uploads` (requires the paid `0.5c-512mb` web plan; free instances cannot attach a disk)
+- Web service `nestopia-api` on the free plan — Docker build from `backend/`, health check `/health`, `alembic upgrade head` before each start
+- Postgres `nestopia-db` on the free plan
+
+Free-tier limits:
+
+- The API sleeps after 15 minutes with no traffic. The next request takes about a minute while it wakes up.
+- Photos and profile pictures live on the instance filesystem and disappear when the service sleeps or redeploys. Accounts and listings stay in Postgres.
+- The free database expires 30 days after creation. Render then gives 14 days to upgrade before it deletes the data.
+- A workspace gets 750 free instance hours per month. Sleeping time does not count.
 
 **Deploy**
 
 1. Push this repo to GitHub.
-2. In [Render](https://dashboard.render.com), choose **New → Blueprint** and select the repo.
+2. In [Render](https://dashboard.render.com), choose **New → Blueprint** and select the repo. Do not add a card.
 3. When prompted, paste `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (leave them blank only if you are not using Google login).
 4. Apply the Blueprint. Render creates the API and database and sets `DATABASE_URL`, `SECRET_KEY`, and `SESSION_SECRET_KEY`.
 5. Open the `nestopia-api` service and copy its URL, for example `https://nestopia-api.onrender.com`.
 
-Logs should include `Upload storage: Render disk at /data/uploads`.
-
-The Blueprint creates a new empty database and an empty upload disk. Accounts, listings, and photos start over; sign up again and re-upload images.
+The database and uploads start empty. Sign up again. Re-upload photos after the service has been asleep or redeployed.
 
 **Vercel** (root directory `frontend`). `REACT_APP_*` is baked in at build time, so change the variable and redeploy:
 
@@ -243,7 +247,7 @@ Set `USE_ML_MATCHING=true` only if workers are running.
 
 - Rotate secrets in production; use HTTPS cookies (`COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` for split deploy)
 - Do not commit `.env`, `nestopia_dev.db`, or `uploads/`
-- On Render, the Blueprint disk at `/data/uploads` keeps uploads across deploys (see Production section)
+- On Render free, `/data/uploads` is wiped when the service sleeps or redeploys (see Production section)
 
 ## Known limitations
 
