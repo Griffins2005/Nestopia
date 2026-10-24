@@ -2,7 +2,7 @@
 
 Nestopia is a full-stack rental housing platform that matches renters with landlords based on housing preferences, property features, and per-listing tenant requirements. Compatibility is shown as a percentage on listings, detail pages, and a daily matches feed.
 
-**Live:** [nestopia-rental.vercel.app](https://nestopia-rental.vercel.app) · API: Render web service (`nestopia-api`, see Production)
+**Live:** [nestopia-rental.vercel.app](https://nestopia-rental.vercel.app) · API: [nestopia-api-5fod.onrender.com](https://nestopia-api-5fod.onrender.com)
 
 ## Quick start
 
@@ -110,25 +110,25 @@ Free-tier limits:
 2. In [Render](https://dashboard.render.com), choose **New → Blueprint** and select the repo. Do not add a card.
 3. When prompted, paste `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (leave them blank only if you are not using Google login).
 4. Apply the Blueprint. Render creates the API and database and sets `DATABASE_URL`, `SECRET_KEY`, and `SESSION_SECRET_KEY`.
-5. Open the `nestopia-api` service and copy its URL, for example `https://nestopia-api.onrender.com`.
+5. The API is [https://nestopia-api-5fod.onrender.com](https://nestopia-api-5fod.onrender.com).
 
 The database and uploads start empty. Sign up again. Re-upload photos after the service has been asleep or redeployed.
 
 **Vercel** (root directory `frontend`). `REACT_APP_*` is baked in at build time, so change the variable and redeploy:
 
 ```env
-REACT_APP_API_BASE_URL=https://nestopia-api.onrender.com
+REACT_APP_API_BASE_URL=https://nestopia-api-5fod.onrender.com
 ```
 
 Include `https://`. Without it, the browser requests `vercel.app/nestopia-api...` and gets **405**.
 
-**Google OAuth** — JavaScript origins: the Vercel URL and `http://localhost:3000`. Authorized redirect URI: `https://<your-onrender-host>/api/auth/google/callback`. The API builds that callback from `RENDER_EXTERNAL_URL` when `GOOGLE_REDIRECT_URI` is unset.
+**Google OAuth** — JavaScript origins: `https://nestopia-rental.vercel.app` and `http://localhost:3000`. Authorized redirect URI: `https://nestopia-api-5fod.onrender.com/api/auth/google/callback`. The API builds that callback from `RENDER_EXTERNAL_URL` when `GOOGLE_REDIRECT_URI` is unset.
 
 ### After deploy — verify
 
 ```bash
-curl https://nestopia-api.onrender.com/health
-curl -sI -X OPTIONS 'https://nestopia-api.onrender.com/api/listings/' \
+curl https://nestopia-api-5fod.onrender.com/health
+curl -sI -X OPTIONS 'https://nestopia-api-5fod.onrender.com/api/listings/' \
   -H 'Origin: https://nestopia-rental.vercel.app' \
   -H 'Access-Control-Request-Method: GET'
 # Expect: access-control-allow-origin: https://nestopia-rental.vercel.app
@@ -136,7 +136,7 @@ curl -sI -X OPTIONS 'https://nestopia-api.onrender.com/api/listings/' \
 
 In the browser (DevTools → Network):
 
-1. API calls go to `https://nestopia-api.onrender.com/...` (not under `vercel.app/...`)
+1. API calls go to `https://nestopia-api-5fod.onrender.com/...` (not under `vercel.app/...`)
 2. `POST /api/auth/login` → 200, then `GET /api/users/me` → 200
 3. `PATCH /api/users/me` → 200 when saving profile
 4. Cookie `nestopia_session` appears under the Render domain after login

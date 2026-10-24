@@ -1,5 +1,6 @@
 // In dev, use the CRA proxy (same origin) so httpOnly cookies work without cross-origin setup.
-// In production (Vercel), set REACT_APP_API_BASE_URL to your API origin including https://
+// Production calls the Render API. REACT_APP_API_BASE_URL overrides that when set.
+const RENDER_API_ORIGIN = 'https://nestopia-api-5fod.onrender.com';
 
 function normalizeApiBaseUrl(raw) {
   const trimmed = (raw || '').trim().replace(/\/$/, '');
@@ -17,18 +18,15 @@ function normalizeApiBaseUrl(raw) {
   if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.error(
-      `[Nestopia] REACT_APP_API_BASE_URL must be a full URL (e.g. https://nestopia-api.onrender.com). Got: "${trimmed}"`,
+      `[Nestopia] REACT_APP_API_BASE_URL must be a full URL (e.g. ${RENDER_API_ORIGIN}). Got: "${trimmed}"`,
     );
   }
   return trimmed;
 }
 
+const fromEnv = (process.env.REACT_APP_API_BASE_URL || '').trim();
 const raw =
-  process.env.REACT_APP_API_BASE_URL !== undefined
-    ? process.env.REACT_APP_API_BASE_URL
-    : process.env.NODE_ENV === 'development'
-      ? ''
-      : '';
+  fromEnv || (process.env.NODE_ENV === 'production' ? RENDER_API_ORIGIN : '');
 
 export const API_BASE_URL = normalizeApiBaseUrl(raw);
 
@@ -39,9 +37,3 @@ export function apiAssetUrl(path) {
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-if (process.env.NODE_ENV === 'production' && !API_BASE_URL) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[Nestopia] REACT_APP_API_BASE_URL is not set. API requests will fail until you configure it in Vercel.',
-  );
-}
