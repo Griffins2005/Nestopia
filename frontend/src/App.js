@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider } from "./context/authContext";
 import AuthContext from "./context/authContext";
 import { NestopiaProvider, useNestopia } from "./context/NestopiaContext";
@@ -84,6 +85,7 @@ export default function App() {
       <AuthProvider>
         <NestopiaProvider>
           <AppInner />
+          <SpeedInsights />
         </NestopiaProvider>
       </AuthProvider>
     </Router>
